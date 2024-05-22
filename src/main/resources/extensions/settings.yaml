@@ -1,0 +1,46 @@
+apiVersion: v1alpha1
+kind: Setting
+metadata:
+  name: picture-bed-settings
+spec:
+  forms: 
+    - group: basic
+      label: 基本设置
+      formSchema:
+        - $formkit: repeater
+          name: pictureBeds
+          label: 图床接口
+          value: []
+          max: 5
+          min: 1
+          children:
+            - $formkit: select
+              name: pictureBedType
+              key: pictureBedType
+              label: 图床类型
+              options:
+                - label: 兰空图床
+                  value: lsky
+                - label: SM.MS
+                  value: smms
+            - $formkit: select
+              name: pictureBedEnabled
+              key: pictureBedEnabled
+              label: 是否启用
+              options:
+                - label: 是
+                  value: true
+                - label: 否
+                  value: false
+            - $formkit: text
+              name: pictureBedUrl
+              label: API 地址
+              value: ""
+              help: 如 https://sm.ms/api/v2/upload/，末尾带 /
+              validation: required|url
+            - $formkit: text
+              name: pictureBedToken
+              label: API Token
+              value: ""
+              help: 图床 API Token
+              validation: required

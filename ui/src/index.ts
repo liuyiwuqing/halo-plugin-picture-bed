@@ -1,29 +1,32 @@
-import { definePlugin } from "@halo-dev/console-shared";
-import HomeView from "./views/HomeView.vue";
-import { IconPlug } from "@halo-dev/components";
+import {
+  definePlugin,
+  type AttachmentSelectProvider,
+} from "@halo-dev/console-shared";
 import { markRaw } from "vue";
+import "./styles/tailwind.css";
+import LskySelectorProvider from "@/components/LskySelectorProvider.vue";
+import SmmsSelectorProvider from "@/components/SmmsSelectorProvider.vue";
+
+const attachmentSelectProviders: AttachmentSelectProvider[] = [
+  {
+    id: "lsky-selector",
+    label: "兰空图床",
+    component: markRaw(LskySelectorProvider),
+  },
+  {
+    id: "smms-selector",
+    label: "SM.MS图床",
+    component: markRaw(SmmsSelectorProvider),
+  },
+];
+
 
 export default definePlugin({
   components: {},
-  routes: [
-    {
-      parentName: "Root",
-      route: {
-        path: "/example",
-        name: "Example",
-        component: HomeView,
-        meta: {
-          title: "示例页面",
-          searchable: true,
-          menu: {
-            name: "示例页面",
-            group: "示例分组",
-            icon: markRaw(IconPlug),
-            priority: 0,
-          },
-        },
-      },
+  routes: [],
+  extensionPoints: {
+    "attachment:selector:create": (): AttachmentSelectProvider[] => {
+      return attachmentSelectProviders;
     },
-  ],
-  extensionPoints: {},
+  },
 });
