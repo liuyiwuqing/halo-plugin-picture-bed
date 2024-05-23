@@ -2,6 +2,7 @@
 import {
   IconCheckboxCircle,
   IconCheckboxFill,
+  IconRefreshLine,
   IconDeleteBin,
   IconEye,
   IconUpload,
@@ -52,7 +53,7 @@ const uploadVisible = ref(false);
 const detailVisible = ref(false);
 const total = ref(0);
 const page = ref(1);
-const size = ref(60);
+const size = ref(40);
 const keyword = ref("");
 const totalLabel = ref("");
 const isLoading = ref(false);
@@ -64,7 +65,8 @@ const {
   data: albumList,
   isLoading: albumListIsLoading,
 } = useQuery({
-  queryKey: [`albumList_${picturebedType}`, page, size, keyword],
+  // queryKey: [`albumList_${picturebedType}`, page, size, keyword],
+  queryKey: [page, size, keyword],
   queryFn: async () => {
     const {data} = await apiClient.get<Album[]>(
         "/apis/picturebed.muyin.site/v1alpha1/albums",
@@ -93,7 +95,8 @@ const {
   data: imageList,
   refetch,
 } = useQuery({
-  queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
+  // queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
+  queryKey: [selectedAlbum, page, size, keyword],
   queryFn: async () => {
     isLoading.value = true;
     const {data} = await apiClient.get<PageResult<Image>>(
@@ -217,7 +220,7 @@ const handleReset = () => {
 </script>
 <template>
   <div>
-    <SearchInput v-model="keyword"/>
+    <SearchInput placeholder="回车搜索" v-model="keyword"/>
   </div>
   <div
       v-if="!keyword"
@@ -243,18 +246,26 @@ const handleReset = () => {
       </div>
     </div>
   </div>
-  <VButton @click="uploadVisible = true">
-    <template #icon>
-      <IconUpload class="h-full w-full"/>
-    </template>
-    上传
-  </VButton>
-  <VButton type="danger" v-if="selectedImages?.size > 0" @click="deleteSelected">
-    <template #icon>
-      <IconDeleteBin class="h-full w-full"/>
-    </template>
-    删除
-  </VButton>
+  <VSpace>
+    <VButton @click="refetch">
+      <template #icon>
+        <IconRefreshLine class="h-full w-full"/>
+      </template>
+      刷新
+    </VButton>
+    <VButton @click="uploadVisible = true">
+      <template #icon>
+        <IconUpload class="h-full w-full"/>
+      </template>
+      上传
+    </VButton>
+    <VButton type="danger" v-if="selectedImages?.size > 0" @click="deleteSelected">
+      <template #icon>
+        <IconDeleteBin class="h-full w-full"/>
+      </template>
+      删除
+    </VButton>
+  </VSpace>
   <VLoading v-if="isLoading"/>
   <VEmpty
       v-else-if="imageList?.length === 0"
@@ -263,7 +274,7 @@ const handleReset = () => {
   >
     <template #actions>
       <VSpace>
-        <VButton @click="">
+        <VButton @click="refetch">
           刷新
         </VButton>
         <VButton type="secondary" @click="uploadVisible = true">
@@ -356,7 +367,7 @@ const handleReset = () => {
         size-label="条 / 页"
         :total-label="totalLabel"
         :total="total"
-        :size-options="[60, 120, 200]"
+        :size-options="[40, 80, 120]"
     />
   </div>
   <ImageDetailModal

@@ -7,16 +7,16 @@ spec:
   enabled: true
   requires: ">=2.14.0"
   author:
-    name: Halo
-    website: https://github.com/halo-dev
+    name: lywq
+    website: https://blog.muyin.site
   logo: logo.png
   settingName: picture-bed-settings
   configMapName: picture-bed-config
-  # 'homepage' usually links to the GitHub repository of the plugin
-  homepage: https://github.com/halo-dev/plugin-picture-bed
-  # 'displayName' explains what the plugin does in only a few words
+  repo: https://github.com/liuyiwuqing/halo-plugin-picture-bed
+  issues: https://github.com/liuyiwuqing/halo-plugin-picture-bed/issues
+  homepage: https://blog.muyin.site/docs/pictureBed
   displayName: "图床插件"
-  description: "对接各大图床，实现图片上传、删除等功能"
+  description: "对接多种图床服务，实现图片上传、删除等功能"
   license:
     - name: "GPL-3.0"
-      url: "https://github.com/halo-dev/plugin-picture-bed/blob/main/LICENSE"
+      url: "https://github.com/liuyiwuqing/halo-plugin-picture-bed/blob/main/LICENSE"

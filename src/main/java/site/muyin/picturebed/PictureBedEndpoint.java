@@ -1,5 +1,6 @@
 package site.muyin.picturebed;
 
+import cn.hutool.json.JSONObject;
 import lombok.AllArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.MediaType;
@@ -12,9 +13,14 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.endpoint.CustomEndpoint;
 import run.halo.app.extension.GroupVersion;
+import site.muyin.picturebed.config.PictureBedConfig;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.service.PictureBedService;
+import site.muyin.picturebed.utils.PluginCacheManager;
 import site.muyin.picturebed.vo.ResultsVO;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
@@ -33,6 +39,8 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 public class PictureBedEndpoint implements CustomEndpoint {
 
     private final PictureBedService pictureBedService;
+
+    private final PluginCacheManager pluginCacheManager;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -59,6 +67,9 @@ public class PictureBedEndpoint implements CustomEndpoint {
                                         ))
                                 .response(responseBuilder().implementation(ResultsVO.class))
                 )
+                .GET("pictureBeds", this::getPictureBeds,
+                        builder -> builder.operationId("pictureBeds")
+                                .description("pictureBeds").tag(tag))
                 .build();
     }
 
@@ -99,6 +110,18 @@ public class PictureBedEndpoint implements CustomEndpoint {
                 return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(result);
             }
         });
+    }
+
+    private Mono<ServerResponse> getPictureBeds(ServerRequest serverRequest) {
+        PictureBedConfig config = pluginCacheManager.getConfig(PictureBedConfig.class);
+        List<JSONObject> pictureBeds = new ArrayList<>();
+        config.getPictureBeds().forEach(pictureBed -> {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("type", pictureBed.getPictureBedType());
+            jsonObject.put("enabled", pictureBed.getPictureBedEnabled());
+            pictureBeds.add(jsonObject);
+        });
+        return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(pictureBeds);
     }
 
     @Override

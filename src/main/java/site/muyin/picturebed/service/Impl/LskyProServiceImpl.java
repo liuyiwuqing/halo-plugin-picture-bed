@@ -111,26 +111,23 @@ public class LskyProServiceImpl implements LskyProService {
         switch (path) {
             case "albums":
             case "images":
-                url += path + "?" + HttpUtil.toParams(paramMap);
                 return WEB_CLIENT.get()
-                        .uri(url)
+                        .uri(url + path + "?" + HttpUtil.toParams(paramMap))
                         .retrieve()
                         .bodyToMono(new ParameterizedTypeReference<>() {
                         });
             case "upload":
-                url += path;
                 return WEB_CLIENT.post()
-                        .uri(url)
+                        .uri(url + path)
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .body(BodyInserters.fromMultipartData((MultiValueMap<String, ?>) paramMap.get("file")))
                         .retrieve()
                         .bodyToMono(new ParameterizedTypeReference<>() {
                         });
             default:
-                url += path;
                 if (path.startsWith("images/")) {
                     return WEB_CLIENT.delete()
-                            .uri(url)
+                            .uri(url + path)
                             .retrieve()
                             .bodyToMono(new ParameterizedTypeReference<>() {
                             });

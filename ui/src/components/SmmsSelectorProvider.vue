@@ -2,6 +2,7 @@
 import {
   IconCheckboxCircle,
   IconCheckboxFill,
+  IconRefreshLine,
   IconDeleteBin,
   IconEye,
   IconUpload,
@@ -64,7 +65,8 @@ const {
   data: imageList,
   refetch,
 } = useQuery({
-  queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
+  // queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
+  queryKey: [selectedAlbum, page, size, keyword],
   queryFn: async () => {
     isLoading.value = true;
     const {data} = await apiClient.get<PageResult<Image>>(
@@ -177,18 +179,26 @@ const handleReset = () => {
 };
 </script>
 <template>
-  <VButton @click="uploadVisible = true">
-    <template #icon>
-      <IconUpload class="h-full w-full"/>
-    </template>
-    上传
-  </VButton>
-  <VButton type="danger" v-if="selectedImages?.size > 0" @click="deleteSelected">
-    <template #icon>
-      <IconDeleteBin class="h-full w-full"/>
-    </template>
-    删除
-  </VButton>
+  <VSpace>
+    <VButton @click="refetch">
+      <template #icon>
+        <IconRefreshLine class="h-full w-full"/>
+      </template>
+      刷新
+    </VButton>
+    <VButton @click="uploadVisible = true">
+      <template #icon>
+        <IconUpload class="h-full w-full"/>
+      </template>
+      上传
+    </VButton>
+    <VButton type="danger" v-if="selectedImages?.size > 0" @click="deleteSelected">
+      <template #icon>
+        <IconDeleteBin class="h-full w-full"/>
+      </template>
+      删除
+    </VButton>
+  </VSpace>
   <VLoading v-if="isLoading"/>
   <VEmpty
       v-if="imageList?.length === 0"
