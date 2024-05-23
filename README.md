@@ -1,6 +1,26 @@
-# plugin-picture-bed
+# 图床插件
 
-Halo 2.0 插件开发快速开始模板。
+## 介绍
+
+对接多种图床服务，实现图片上传、删除等功能。
+
+![图床插件演示1.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示1.png)
+![图床插件演示2.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示2.png)
+![图床插件演示3.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示3.png)
+![图床插件演示5.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示5.png)
+![图床插件演示4.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示4.png)
+
+## 功能
+
+### V1.0.0版本
+    1. 对接兰空图床
+    2. 对接SM.MS图床
+    3. 支持图片上传、批量上传
+    4. 支持图片删除、批量删除
+
+## 插件文档
+
+请访问：<https://blog.muyin.site/docs/pictureBed/getting-started/plugin-setting>
 
 ## 开发环境
 
