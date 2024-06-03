@@ -11,7 +11,7 @@ spec:
           name: pictureBeds
           label: 图床接口
           value: []
-          max: 2
+          max: 3
           min: 1
           children:
             - $formkit: select
@@ -21,8 +21,10 @@ spec:
               options:
                 - label: 兰空图床
                   value: lsky
-                - label: SM.MS
+                - label: SM.MS图床
                   value: smms
+                - label: ImgTP图床
+                  value: imgtp
             - $formkit: select
               name: pictureBedEnabled
               key: pictureBedEnabled

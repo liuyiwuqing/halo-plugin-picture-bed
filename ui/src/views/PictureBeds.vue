@@ -1,16 +1,16 @@
 <script setup lang="ts">
 
-import {onMounted, ref} from "vue";
-import {VButton, VCard, VEmpty, VPageHeader, VSpace} from "@halo-dev/components";
+import {ref} from "vue";
+import {VButton, VCard, VEmpty, VLoading, VPageHeader, VSpace} from "@halo-dev/components";
 import MdiPicture360Outline from '~icons/mdi/picture-360-outline';
 import LskySelectorProvider from "@/components/LskySelectorProvider.vue";
 import SMMSSelectorProvider from "@/components/SmmsSelectorProvider.vue";
+import ImgTPSelectorProvider from "@/components/ImgTPSelectorProvider.vue";
 import apiClient from "@/utils/api-client";
+import {useQuery} from "@tanstack/vue-query";
 
 const pictureBedType = ref();
-
-// 获取已对接的图床列表
-const pictureBedsAvailable = ref([]);
+const isLoading = ref(false);
 
 const pictureBeds = ref({
   'lsky': {
@@ -20,24 +20,36 @@ const pictureBeds = ref({
   'smms': {
     label: 'SM.MS图床',
     value: 'smms',
+  },
+  'imgtp': {
+    label: 'ImgTP图床',
+    value: 'imgtp',
   }
 });
 
-const getPictureBeds = () => {
-  apiClient.get('/apis/picturebed.muyin.site/v1alpha1/pictureBeds').then(response => {
-    response.data.forEach(item => {
+// 图床列表
+const {
+  data: pictureBedsAvailable
+} = useQuery({
+  queryKey: [],
+  queryFn: async () => {
+    isLoading.value = true;
+    const {data} = await apiClient.get(
+        "/apis/picturebed.muyin.site/v1alpha1/pictureBeds"
+    );
+    const pictureBedsEnabled = [];
+    data.forEach(item => {
       if (item.enabled) {
-        pictureBedsAvailable.value.push(pictureBeds.value[item.type]);
+        pictureBedsEnabled.push(pictureBeds.value[item.type]);
       }
     });
-    pictureBedType.value = pictureBedsAvailable.value[0].value;
-  }).catch(error => {
-    console.error(error);
-  });
-}
-
-onMounted(() => {
-  getPictureBeds();
+    if (pictureBedsEnabled.length > 0) {
+      pictureBedType.value = pictureBedsEnabled[0].value;
+    }
+    isLoading.value = false;
+    return pictureBedsEnabled;
+  },
+  enabled: true,
 });
 </script>
 
@@ -50,17 +62,21 @@ onMounted(() => {
       <FilterDropdown
           v-model="pictureBedType"
           label="图床"
-          :items="pictureBedsAvailable"
+          :items="pictureBedsAvailable ?pictureBedsAvailable: []"
       />
     </template>
   </VPageHeader>
   <div>
-    <VCard>
+    <VLoading v-if="isLoading"/>
+    <VCard v-else>
       <template v-if="pictureBedType === 'lsky'">
         <LskySelectorProvider/>
       </template>
       <template v-else-if="pictureBedType === 'smms'">
         <SMMSSelectorProvider/>
+      </template>
+      <template v-else-if="pictureBedType === 'imgtp'">
+        <ImgTPSelectorProvider/>
       </template>
       <VEmpty
           v-else

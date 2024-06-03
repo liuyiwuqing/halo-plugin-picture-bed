@@ -6,6 +6,7 @@ import org.springframework.http.codec.multipart.Part;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
+import site.muyin.picturebed.domain.ImgtpImage;
 import site.muyin.picturebed.domain.LskyProAlbum;
 import site.muyin.picturebed.domain.LskyProImage;
 import site.muyin.picturebed.domain.SmmsImage;
@@ -18,6 +19,7 @@ import site.muyin.picturebed.vo.ResultsVO;
 import java.io.File;
 import java.util.List;
 
+import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.IMGTP;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.LSKY;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.SMMS;
 
@@ -33,6 +35,7 @@ public class PictureBedService {
 
     private final LskyProService lskyProService;
     private final SmmsService smmsService;
+    private final ImgtpService imgtpService;
 
     public Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, Part> parts) {
         String type = query.getType();
@@ -41,6 +44,8 @@ public class PictureBedService {
                 return lskyProService.uploadImage(parts);
             case SMMS:
                 return smmsService.uploadImage(parts);
+            case IMGTP:
+                return imgtpService.uploadImage(parts);
             default:
                 // TODO: get album list from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -78,6 +83,11 @@ public class PictureBedService {
                     PageResult<ImageVO> imageVOPageResult = convertSmmsImageListToImageVOList(smmsImages);
                     return Mono.just(imageVOPageResult);
                 });
+            case IMGTP:
+                return imgtpService.getImageList(query).flatMap(imgtpImages -> {
+                    PageResult<ImageVO> imageVOPageResult = convertImgtpImageListToImageVOList(imgtpImages);
+                    return Mono.just(imageVOPageResult);
+                });
             default:
                 // TODO: get image list from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -91,6 +101,8 @@ public class PictureBedService {
                 return lskyProService.deleteImage(query);
             case SMMS:
                 return smmsService.deleteImage(query);
+            case IMGTP:
+                return imgtpService.deleteImage(query);
             default:
                 // TODO: delete image from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -135,6 +147,20 @@ public class PictureBedService {
             return imageVO;
         }).toList();
         return new PageResult<>(page.getPage(), page.getSize(), page.getTotalCount(), page.getTotalPages(), imageVOList);
+    }
+
+    private PageResult<ImageVO> convertImgtpImageListToImageVOList(PageResult<ImgtpImage> imgtpImages) {
+        List<ImgtpImage> imageList = imgtpImages.getList();
+        List<ImageVO> imageVOList = imageList.stream().map(image -> {
+            ImageVO imageVO = new ImageVO();
+            imageVO.setId(image.getId())
+                    .setName(image.getName())
+                    .setUrl(image.getUrl())
+                    .setMediaType(image.getMime())
+                    .setSize(image.getSize());
+            return imageVO;
+        }).toList();
+        return new PageResult<>(imgtpImages.getPage(), imgtpImages.getSize(), imgtpImages.getTotalCount(), imgtpImages.getTotalPages(), imageVOList);
     }
 
     public static String getMediaType(String fileName) {

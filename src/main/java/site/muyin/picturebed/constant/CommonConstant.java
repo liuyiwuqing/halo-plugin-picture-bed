@@ -11,5 +11,6 @@ public class CommonConstant {
     public static class PictureBedType {
         public static final String LSKY = "lsky";
         public static final String SMMS = "smms";
+        public static final String IMGTP = "imgtp";
     }
 }

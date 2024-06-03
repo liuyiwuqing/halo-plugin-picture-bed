@@ -25,14 +25,13 @@ const onVisibleChange = (visible: boolean) => {
   }
 };
 
-const onProcessCompleted = (response: SuccessResponse) => {
+const onUploaded = async (response: SuccessResponse) => {
   console.log("上传结果", response);
   Toast.success("上传成功！");
 };
 
 const onError = (file: UppyFile, response: ErrorResponse) => {
-  const body = response.body;
-  console.error(`上传失败：${file.name} ${body}`);
+  console.log("上传失败", file, response, response.body);
 };
 
 const uploadUrl = `/apis/picturebed.muyin.site/v1alpha1/uploadImage?type=${props.picBedType}`;
@@ -52,12 +51,12 @@ const uploadUrl = `/apis/picturebed.muyin.site/v1alpha1/uploadImage?type=${props
         :restrictions="{
           allowedFileTypes: ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.bmp', '.webp'],
         }"
+        width="100%"
         note="仅支持图片格式"
         :endpoint="uploadUrl"
-        width="100%"
-        @uploaded="onProcessCompleted"
-        :done-button-handler="() => onVisibleChange(false)"
+        @uploaded="onUploaded"
         @error="onError"
+        :doneButtonHandler="() => onVisibleChange(false)"
     />
   </VModal>
 </template>
