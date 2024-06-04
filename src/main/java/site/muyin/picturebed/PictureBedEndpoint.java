@@ -10,6 +10,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.endpoint.CustomEndpoint;
 import run.halo.app.extension.GroupVersion;
@@ -79,9 +80,11 @@ public class PictureBedEndpoint implements CustomEndpoint {
         return multiValueMapMono.flatMap(multiValueMap -> {
             return pictureBedService.uploadImage(query, multiValueMap).flatMap(resultsVO -> {
                 if (resultsVO.getCode() == 200) {
-                    return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(resultsVO);
+                    // return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(resultsVO);
+                    return ServerResponse.ok().bodyValue(resultsVO.getMsg());
                 } else {
-                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(resultsVO);
+                    // return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(resultsVO);
+                    return Mono.error(new ServerWebInputException(resultsVO.getMsg()));
                 }
             });
         });
