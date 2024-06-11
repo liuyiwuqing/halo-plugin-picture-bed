@@ -2,9 +2,9 @@
 import {
   IconCheckboxCircle,
   IconCheckboxFill,
-  IconRefreshLine,
   IconDeleteBin,
   IconEye,
+  IconRefreshLine,
   IconUpload,
   VButton,
   VCard,
@@ -151,7 +151,7 @@ watchEffect(() => {
   const images = Array.from(selectedImages.value).map((image) => {
     return {
       url: image.url,
-      type: image.name as string,
+      type: image.mediaType as string,
     };
   });
   emit("update:selected", images);
