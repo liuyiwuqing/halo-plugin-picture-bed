@@ -20,7 +20,7 @@ import {matchMediaTypes} from "@/utils/media-type";
 import LazyImage from "@/components/image/LazyImage.vue";
 import type {Album, Image, PageResult} from "@/types";
 import {useQuery} from "@tanstack/vue-query";
-import apiClient from "@/utils/api-client";
+import {axiosInstance} from "@halo-dev/api-client";
 import ImageDetailModal from "@/components/image/ImageDetailModal.vue";
 import ImageUploadModal from "@/components/image/ImageUploadModal.vue";
 
@@ -45,6 +45,7 @@ const emit = defineEmits<{
 }>();
 
 const selectedImages = ref<Set<Image>>(new Set());
+const deletedImageIds = ref<Set<string>>(new Set());
 const selectedAlbum = ref<Album>();
 const selectedImage = ref<Image | undefined>();
 const checkedAll = ref(false);
@@ -65,11 +66,10 @@ const {
   data: imageList,
   refetch,
 } = useQuery({
-  // queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
-  queryKey: [selectedAlbum, page, size, keyword],
+  queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
   queryFn: async () => {
     isLoading.value = true;
-    const {data} = await apiClient.get<PageResult<Image>>(
+    const {data} = await axiosInstance.get<PageResult<Image>>(
         "/apis/picturebed.muyin.site/v1alpha1/images",
         {
           params: {
@@ -85,7 +85,13 @@ const {
     page.value = data.page;
     size.value = data.size;
     isLoading.value = false;
-    return data.list;
+
+    // 过滤已删除的图片
+    const images = data.list.filter((image) => {
+      return !deletedImageIds.value.has(image.id);
+    });
+
+    return images;
   },
   // keepPreviousData: true,
   enabled: true,
@@ -118,7 +124,7 @@ const isDisabled = (image: Image) => {
 const deleteSelected = async () => {
   const selected = Array.from(selectedImages.value);
   selected.forEach((image) => {
-    apiClient.get(
+    axiosInstance.get(
         "/apis/picturebed.muyin.site/v1alpha1/deleteImage",
         {
           params: {
@@ -127,6 +133,7 @@ const deleteSelected = async () => {
           },
         }
     );
+    deletedImageIds.value.add(image.id);
   });
   selectedImages.value.clear();
   await refetch();
@@ -150,9 +157,15 @@ const handleOpenDetail = (image: Image) => {
 watchEffect(() => {
   const images = Array.from(selectedImages.value).map((image) => {
     return {
-      url: image.url,
-      type: image.mediaType as string,
-    };
+      spec: {
+        displayName: image.name,
+        mediaType: image.mediaType,
+        size: image.size,
+      },
+      status: {
+        permalink: image.url,
+      }
+    }
   });
   emit("update:selected", images);
 });

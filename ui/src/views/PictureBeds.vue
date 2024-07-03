@@ -4,9 +4,9 @@ import {ref} from "vue";
 import {VButton, VCard, VEmpty, VLoading, VPageHeader, VSpace} from "@halo-dev/components";
 import MdiPicture360Outline from '~icons/mdi/picture-360-outline';
 import LskySelectorProvider from "@/components/LskySelectorProvider.vue";
-import SMMSSelectorProvider from "@/components/SmmsSelectorProvider.vue";
-import ImgTPSelectorProvider from "@/components/ImgTPSelectorProvider.vue";
-import apiClient from "@/utils/api-client";
+import SmmsSelectorProvider from "@/components/SmmsSelectorProvider.vue";
+import ImgtpSelectorProvider from "@/components/ImgtpSelectorProvider.vue";
+import {axiosInstance} from "@halo-dev/api-client";
 import {useQuery} from "@tanstack/vue-query";
 
 const pictureBedType = ref();
@@ -31,10 +31,10 @@ const pictureBeds = ref({
 const {
   data: pictureBedsAvailable
 } = useQuery({
-  queryKey: [],
+  queryKey: ['pictureBeds'],
   queryFn: async () => {
     isLoading.value = true;
-    const {data} = await apiClient.get(
+    const {data} = await axiosInstance.get(
         "/apis/picturebed.muyin.site/v1alpha1/pictureBeds"
     );
     const pictureBedsEnabled = [];
@@ -73,10 +73,10 @@ const {
         <LskySelectorProvider/>
       </template>
       <template v-else-if="pictureBedType === 'smms'">
-        <SMMSSelectorProvider/>
+        <SmmsSelectorProvider/>
       </template>
       <template v-else-if="pictureBedType === 'imgtp'">
-        <ImgTPSelectorProvider/>
+        <ImgtpSelectorProvider/>
       </template>
       <VEmpty
           v-else

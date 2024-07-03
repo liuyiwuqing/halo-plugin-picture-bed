@@ -105,12 +105,15 @@ public class LskyProServiceImpl implements LskyProService {
 
         WebClient WEB_CLIENT =
                 WebClient.builder()
+                        .defaultHeader(HttpHeaders.CACHE_CONTROL, "no-cache")
+                        .defaultHeader(HttpHeaders.PRAGMA, "no-cache")
                         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .defaultHeader("Authorization", "Bearer " + authorization).build();
 
         switch (path) {
             case "albums":
             case "images":
+                paramMap.put("timestamp", System.currentTimeMillis());
                 return WEB_CLIENT.get()
                         .uri(url + path + "?" + HttpUtil.toParams(paramMap))
                         .retrieve()

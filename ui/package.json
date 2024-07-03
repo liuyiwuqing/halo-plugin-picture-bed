@@ -8,20 +8,20 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
+    "@halo-dev/api-client": "^2.17.0",
+    "@halo-dev/components": "^2.17.0",
+    "@halo-dev/console-shared": "^2.17.0",
+    "@material-tailwind/html": "^2.2.2",
+    "@tanstack/vue-query": "^5.29.0",
     "@uppy/core": "^3.11.3",
     "@vueuse/core": "^10.3.0",
-    "pretty-bytes": "^6.0.0",
+    "axios": "^1.6.8",
     "path-browserify": "^1.0.1",
-    "@material-tailwind/html": "^2.2.2",
-    "@halo-dev/api-client": "^2.16.0",
-    "@halo-dev/components": "^2.16.0",
-    "@halo-dev/console-shared": "^2.16.0",
-    "@tanstack/vue-query": "^5.29.0",
-    "axios": "^1.5.0",
+    "pretty-bytes": "^6.0.0",
     "vue": "^3.3.12"
   },
   "devDependencies": {
-    "@halo-dev/ui-plugin-bundler-kit": "^1.0.0",
+    "@halo-dev/ui-plugin-bundler-kit": "^2.17.0",
     "@iconify/json": "^2.2.159",
     "@rushstack/eslint-patch": "^1.6.1",
     "@types/canvas-confetti": "^1.6.4",

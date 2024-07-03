@@ -88,10 +88,15 @@ public class SmmsServiceImpl implements SmmsService {
 
         WebClient WEB_CLIENT =
                 WebClient.builder()
+                        .defaultHeader(HttpHeaders.CACHE_CONTROL, "no-cache")
+                        .defaultHeader(HttpHeaders.PRAGMA, "no-cache")
                         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.MULTIPART_FORM_DATA_VALUE)
                         .defaultHeader("Authorization", "Basic " + authorization).build();
 
         if (StrUtil.startWithAny(path, "upload_history", "delete/")) {
+            if (StrUtil.startWithAny(path, "upload_history")) {
+                path = path + "&timestamp=" + System.currentTimeMillis();
+            }
             return WEB_CLIENT.get()
                     .uri(url + path)
                     .retrieve()
