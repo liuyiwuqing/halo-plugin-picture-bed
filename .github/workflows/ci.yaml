@@ -62,7 +62,7 @@ jobs:
           sed -i "s/version=.*-SNAPSHOT$/version=$version/1" gradle.properties
           ./gradlew clean build -x test
       - name: Archive plugin-picture-bed jar
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: plugin-picture-bed
           path: |
@@ -75,7 +75,7 @@ jobs:
     if: github.event_name == 'release'
     steps:
       - name: Download plugin-picture-bed jar
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: plugin-picture-bed
           path: build/libs
