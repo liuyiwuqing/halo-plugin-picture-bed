@@ -18,11 +18,11 @@ import {isImage} from "@/utils/image";
 import type {AttachmentLike} from "@halo-dev/console-shared";
 import {matchMediaTypes} from "@/utils/media-type";
 import LazyImage from "@/components/image/LazyImage.vue";
-import type {Album, Image, PageResult} from "@/types";
+import type {Album, Image} from "@/types";
 import {useQuery} from "@tanstack/vue-query";
-import {axiosInstance} from "@halo-dev/api-client";
 import ImageDetailModal from "@/components/image/ImageDetailModal.vue";
 import ImageUploadModal from "@/components/image/ImageUploadModal.vue";
+import {pictureBedApisClient} from "@/api";
 
 const props = withDefaults(
     defineProps<{
@@ -30,12 +30,14 @@ const props = withDefaults(
       accepts?: string[];
       min?: number;
       max?: number;
+      pictureBedKey: string;
     }>(),
     {
       selected: () => [],
       accepts: () => ["*/*"],
       min: undefined,
       max: undefined,
+      pictureBedKey: "",
     }
 );
 
@@ -59,7 +61,8 @@ const keyword = ref("");
 const totalLabel = ref("");
 const isLoading = ref(false);
 
-const picturebedType = "smms";
+const picturebedType = props.pictureBedKey.split("_")[0];
+const pictureBedId = props.pictureBedKey.split("_")[1];
 
 // 图片列表
 const {
@@ -69,16 +72,12 @@ const {
   queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
   queryFn: async () => {
     isLoading.value = true;
-    const {data} = await axiosInstance.get<PageResult<Image>>(
-        "/apis/picturebed.muyin.site/v1alpha1/images",
-        {
-          params: {
-            type: picturebedType,
-            page: page.value,
-            size: size.value,
-          },
-        }
-    );
+    const {data} = await pictureBedApisClient.pictureBed.images({
+      pictureBedId: pictureBedId,
+      type: picturebedType,
+      page: page.value,
+      size: size.value
+    });
 
     totalLabel.value = `共 ${data.totalCount} 条`;
     total.value = data.size * data.totalPages;
@@ -124,15 +123,11 @@ const isDisabled = (image: Image) => {
 const deleteSelected = async () => {
   const selected = Array.from(selectedImages.value);
   selected.forEach((image) => {
-    axiosInstance.get(
-        "/apis/picturebed.muyin.site/v1alpha1/deleteImage",
-        {
-          params: {
-            type: picturebedType,
-            imageId: image.id,
-          },
-        }
-    );
+    pictureBedApisClient.pictureBed.deleteImage({
+      pictureBedId: pictureBedId,
+      type: picturebedType,
+      imageId: image.id
+    });
     deletedImageIds.value.add(image.id);
   });
   selectedImages.value.clear();
@@ -183,7 +178,6 @@ watch(
       page.value = 1;
     }
 );
-
 
 const handleReset = () => {
   selectedImage.value = undefined;
@@ -338,6 +332,7 @@ const handleReset = () => {
   <ImageUploadModal
       :visible="uploadVisible"
       :picBedType="picturebedType"
+      :picBedId="pictureBedId"
       @close="uploadVisible = false; refetch();"
   />
 </template>

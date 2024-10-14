@@ -5,10 +5,14 @@ import type {ErrorResponse, SuccessResponse, UppyFile} from "@uppy/core";
 const props = withDefaults(
     defineProps<{
       picBedType: string;
+      picBedId: string;
+      albumId: string;
       visible: boolean;
     }>(),
     {
-      picBedType: undefined,
+      picBedType: "",
+      picBedId: "",
+      albumId: "",
       visible: false,
     }
 );
@@ -34,7 +38,7 @@ const onError = (file: UppyFile, response: ErrorResponse) => {
   console.log("上传失败", file, response, response.body);
 };
 
-const uploadUrl = `/apis/picturebed.muyin.site/v1alpha1/uploadImage?type=${props.picBedType}`;
+const uploadUrl = `/apis/picturebed.muyin.site/v1alpha1/uploadImage?type=${props.picBedType}&pictureBedId=${props.picBedId}&albumId=${props.albumId}`;
 </script>
 
 <template>

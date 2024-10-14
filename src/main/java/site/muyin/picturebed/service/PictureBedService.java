@@ -41,11 +41,11 @@ public class PictureBedService {
         String type = query.getType();
         switch (type) {
             case LSKY:
-                return lskyProService.uploadImage(parts);
+                return lskyProService.uploadImage(query, parts);
             case SMMS:
-                return smmsService.uploadImage(parts);
+                return smmsService.uploadImage(query, parts);
             case IMGTP:
-                return imgtpService.uploadImage(parts);
+                return imgtpService.uploadImage(query, parts);
             default:
                 // TODO: get album list from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");

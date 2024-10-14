@@ -27,9 +27,12 @@ public class PictureBedConfig {
     @Data
     @Accessors(chain = true)
     public class PictureBed {
+        private String pictureBedId;
+        private String pictureBedName;
         private Boolean pictureBedEnabled;
         private String pictureBedType;
         private String pictureBedUrl;
         private String pictureBedToken;
+        private String pictureBedStrategyId;
     }
 }

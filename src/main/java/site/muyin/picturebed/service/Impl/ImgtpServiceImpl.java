@@ -42,10 +42,10 @@ public class ImgtpServiceImpl implements ImgtpService {
     private final PluginCacheManager pluginCacheManager;
 
     @Override
-    public Mono<ResultsVO> uploadImage(MultiValueMap<String, ?> multipartData) {
+    public Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, ?> multipartData) {
         Map<String, Object> paramMap = new HashMap(1);
         paramMap.put("file", multipartData);
-        return req("upload", paramMap)
+        return req(query.getPictureBedId(), "upload", paramMap)
                 .map(response -> {
                     if (response.code == 200) {
                         return ResultsVO.success(response.msg, response.data);
@@ -61,7 +61,7 @@ public class ImgtpServiceImpl implements ImgtpService {
         paramMap.put("rows", query.getSize());
         String params = HttpUtil.toParams(paramMap);
 
-        return req("images" + "?" + params, null)
+        return req(query.getPictureBedId(), "images" + "?" + params, null)
                 .map(response -> {
                     if (response.code == 200) {
                         ImgtpImagePageRes imgtpImagePageRes = JSONUtil.toBean(JSONUtil.toJsonStr(response.data), ImgtpImagePageRes.class);
@@ -79,15 +79,15 @@ public class ImgtpServiceImpl implements ImgtpService {
         Map<String, Object> paramMap = new HashMap(1);
         paramMap.put("id", query.getImageId());
         String params = HttpUtil.toParams(paramMap);
-        return req("delete" + "?" + params, null)
+        return req(query.getPictureBedId(), "delete" + "?" + params, null)
                 .map(response -> {
                     return response.code == 200;
                 });
     }
 
-    private Mono<ImgtpResponseRecord> req(String path, Map<String, Object> paramMap) {
+    private Mono<ImgtpResponseRecord> req(String pictureBedId, String path, Map<String, Object> paramMap) {
         PictureBedConfig pictureBedConfig = pluginCacheManager.getConfig(PictureBedConfig.class);
-        PictureBedConfig.PictureBed config = pictureBedConfig.getPictureBeds().stream().filter(p -> p.getPictureBedType().equals(IMGTP)).findFirst().orElseThrow();
+        PictureBedConfig.PictureBed config = pictureBedConfig.getPictureBeds().stream().filter(p -> p.getPictureBedType().equals(IMGTP) && p.getPictureBedId().equals(pictureBedId)).findFirst().orElseThrow();
         String url = config.getPictureBedUrl();
         String authorization = config.getPictureBedToken();
 

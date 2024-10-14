@@ -11,20 +11,36 @@ spec:
           name: pictureBeds
           label: 图床接口
           value: []
-          max: 2
+          help: 图床接口配置
           min: 1
           children:
+            - $formkit: text
+              disabled: true
+              name: pictureBedId
+              key: pictureBedId
+              label: 图床 ID
+              value: $index
+              validation: required
             - $formkit: select
+              id: pictureBedType
               name: pictureBedType
               key: pictureBedType
               label: 图床类型
+              value: lsky
               options:
                 - label: 兰空图床
                   value: lsky
                 - label: SM.MS图床
                   value: smms
-            #                - label: ImgTP图床
-            #                  value: imgtp
+                - label: ImgTP图床
+                  value: imgtp
+            - $formkit: text
+              name: pictureBedName
+              key: pictureBedName
+              label: 图床名称
+              value: ""
+              help: 图床名称
+              validation: required
             - $formkit: select
               name: pictureBedEnabled
               key: pictureBedEnabled
@@ -36,13 +52,22 @@ spec:
                   value: false
             - $formkit: text
               name: pictureBedUrl
+              key: pictureBedUrl
               label: API 地址
               value: ""
               help: 如 https://sm.ms/api/v2/，末尾带 /
               validation: required|url
             - $formkit: text
               name: pictureBedToken
+              key: pictureBedToken
               label: API Token
               value: ""
               help: 图床 API Token
               validation: required
+            - $formkit: text
+              if: $value.pictureBedType === lsky
+              name: pictureBedStrategyId
+              key: pictureBedStrategyId
+              label: 储存策略ID
+              value: ""
+              help: 图床的存储策略 id

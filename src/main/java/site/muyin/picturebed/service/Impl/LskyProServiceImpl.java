@@ -1,5 +1,6 @@
 package site.muyin.picturebed.service.Impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
 import lombok.RequiredArgsConstructor;
@@ -39,11 +40,12 @@ public class LskyProServiceImpl implements LskyProService {
     private final PluginCacheManager pluginCacheManager;
 
     @Override
-    public Mono<ResultsVO> uploadImage(MultiValueMap<String, ?> multipartData) {
+    public Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, ?> multipartData) {
         Map<String, Object> paramMap = new HashMap(1);
         paramMap.put("file", multipartData);
+        paramMap.put("album_id", query.getAlbumId());
 
-        return req("upload", paramMap)
+        return req(query.getPictureBedId(), "upload", paramMap)
                 .map(response -> {
                     if (response.status) {
                         return ResultsVO.success(response.message, response.data);
@@ -57,7 +59,7 @@ public class LskyProServiceImpl implements LskyProService {
         Map<String, Object> paramMap = new HashMap(2);
         paramMap.put("keyword", query.getKeyword());
         paramMap.put("page", query.getPage());
-        return req("albums", paramMap)
+        return req(query.getPictureBedId(), "albums", paramMap)
                 .map(response -> {
                     if (response.status) {
                         Map<String, Object> data = response.data;
@@ -74,7 +76,7 @@ public class LskyProServiceImpl implements LskyProService {
         paramMap.put("keyword", query.getKeyword());
         paramMap.put("album_id", query.getAlbumId());
         paramMap.put("page", query.getPage());
-        return req("images", paramMap)
+        return req(query.getPictureBedId(), "images", paramMap)
                 .map(response -> {
                     if (response.status) {
                         Map<String, Object> data = response.data;
@@ -91,24 +93,27 @@ public class LskyProServiceImpl implements LskyProService {
         paramMap.put("keyword", query.getKeyword());
         paramMap.put("album_id", query.getAlbumId());
         paramMap.put("page", query.getPage());
-        return req("images/" + query.getImageId(), paramMap)
+        return req(query.getPictureBedId(), "images/" + query.getImageId(), paramMap)
                 .map(response -> {
                     return response.status;
                 });
     }
 
-    private Mono<LskyProResponseRecord> req(String path, Map<String, Object> paramMap) {
+    private Mono<LskyProResponseRecord> req(String pictureBedId, String path, Map<String, Object> paramMap) {
         PictureBedConfig pictureBedConfig = pluginCacheManager.getConfig(PictureBedConfig.class);
-        PictureBedConfig.PictureBed config = pictureBedConfig.getPictureBeds().stream().filter(p -> p.getPictureBedType().equals(LSKY)).findFirst().orElseThrow();
+        PictureBedConfig.PictureBed config = pictureBedConfig.getPictureBeds().stream().filter(p -> p.getPictureBedType().equals(LSKY) && p.getPictureBedId().equals(pictureBedId)).findFirst().orElseThrow();
         String url = config.getPictureBedUrl();
         String authorization = config.getPictureBedToken();
+        String pictureBedStrategyId = config.getPictureBedStrategyId();
 
         WebClient WEB_CLIENT =
                 WebClient.builder()
                         .defaultHeader(HttpHeaders.CACHE_CONTROL, "no-cache")
                         .defaultHeader(HttpHeaders.PRAGMA, "no-cache")
                         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .defaultHeader("Authorization", "Bearer " + authorization).build();
+                        .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                        .defaultHeader("Authorization", "Bearer " + authorization)
+                        .build();
 
         switch (path) {
             case "albums":
@@ -120,10 +125,17 @@ public class LskyProServiceImpl implements LskyProService {
                         .bodyToMono(new ParameterizedTypeReference<>() {
                         });
             case "upload":
+                BodyInserters.MultipartInserter fromMultipartData = BodyInserters.fromMultipartData((MultiValueMap<String, ?>) paramMap.get("file"));
+                if (ObjectUtil.isNotEmpty(pictureBedStrategyId)) {
+                    fromMultipartData.with("strategy_id", Integer.valueOf(pictureBedStrategyId));
+                }
+                if (ObjectUtil.isNotEmpty(paramMap.get("album_id"))) {
+                    fromMultipartData.with("album_id", Integer.valueOf(paramMap.get("album_id").toString()));
+                }
                 return WEB_CLIENT.post()
                         .uri(url + path)
                         .contentType(MediaType.MULTIPART_FORM_DATA)
-                        .body(BodyInserters.fromMultipartData((MultiValueMap<String, ?>) paramMap.get("file")))
+                        .body(fromMultipartData)
                         .retrieve()
                         .bodyToMono(new ParameterizedTypeReference<>() {
                         });

@@ -41,10 +41,10 @@ public class SmmsServiceImpl implements SmmsService {
     private final PluginCacheManager pluginCacheManager;
 
     @Override
-    public Mono<ResultsVO> uploadImage(MultiValueMap<String, ?> multipartData) {
+    public Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, ?> multipartData) {
         Map<String, Object> paramMap = new HashMap(1);
         paramMap.put("file", multipartData);
-        return req("upload", paramMap)
+        return req(query.getPictureBedId(), "upload", paramMap)
                 .map(response -> {
                     if (response.success) {
                         return ResultsVO.success(response.message, response.data);
@@ -59,7 +59,7 @@ public class SmmsServiceImpl implements SmmsService {
         paramMap.put("page", query.getPage());
         String params = HttpUtil.toParams(paramMap);
 
-        return req("upload_history" + "?" + params, null)
+        return req(query.getPictureBedId(), "upload_history" + "?" + params, null)
                 .map(response -> {
                     if (response.success) {
                         List<SmmsImage> imageList = JSONUtil.toList(JSONUtil.parseArray(response.data), SmmsImage.class);
@@ -74,15 +74,15 @@ public class SmmsServiceImpl implements SmmsService {
         if (ObjectUtil.isEmpty(query.getImageId())) {
             return Mono.just(false);
         }
-        return req("delete/" + query.getImageId(), null)
+        return req(query.getPictureBedId(), "delete/" + query.getImageId(), null)
                 .map(response -> {
                     return response.success;
                 });
     }
 
-    private Mono<SmmsResponseRecord> req(String path, Map<String, Object> paramMap) {
+    private Mono<SmmsResponseRecord> req(String pictureBedId, String path, Map<String, Object> paramMap) {
         PictureBedConfig pictureBedConfig = pluginCacheManager.getConfig(PictureBedConfig.class);
-        PictureBedConfig.PictureBed config = pictureBedConfig.getPictureBeds().stream().filter(p -> p.getPictureBedType().equals(SMMS)).findFirst().orElseThrow();
+        PictureBedConfig.PictureBed config = pictureBedConfig.getPictureBeds().stream().filter(p -> p.getPictureBedType().equals(SMMS) && p.getPictureBedId().equals(pictureBedId)).findFirst().orElseThrow();
         String url = config.getPictureBedUrl();
         String authorization = config.getPictureBedToken();
 

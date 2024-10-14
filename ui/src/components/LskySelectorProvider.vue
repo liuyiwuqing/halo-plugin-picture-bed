@@ -13,16 +13,16 @@ import {
   VPagination,
   VSpace,
 } from "@halo-dev/components";
-import {computed, ref, watch, watchEffect} from "vue";
+import {computed, onMounted, ref, watch, watchEffect} from "vue";
 import {isImage} from "@/utils/image";
 import type {AttachmentLike} from "@halo-dev/console-shared";
 import {matchMediaTypes} from "@/utils/media-type";
 import LazyImage from "@/components/image/LazyImage.vue";
-import type {Album, Image, PageResult} from "@/types";
+import type {Album, Image} from "@/types";
 import {useQuery} from "@tanstack/vue-query";
-import {axiosInstance} from "@halo-dev/api-client";
 import ImageDetailModal from "@/components/image/ImageDetailModal.vue";
 import ImageUploadModal from "@/components/image/ImageUploadModal.vue";
+import {pictureBedApisClient} from "@/api";
 
 const props = withDefaults(
     defineProps<{
@@ -30,12 +30,14 @@ const props = withDefaults(
       accepts?: string[];
       min?: number;
       max?: number;
+      pictureBedKey: string;
     }>(),
     {
       selected: () => [],
       accepts: () => ["*/*"],
       min: undefined,
       max: undefined,
+      pictureBedKey: "",
     }
 );
 
@@ -60,7 +62,8 @@ const totalLabel = ref("");
 const albumListIsLoading = ref(false);
 const isLoading = ref(false);
 
-const picturebedType = "lsky";
+const picturebedType = props.pictureBedKey.split("_")[0];
+const pictureBedId = props.pictureBedKey.split("_")[1];
 
 // 相册列表
 let {
@@ -69,21 +72,17 @@ let {
   queryKey: [`albumList_${picturebedType}`, page, size, keyword],
   queryFn: async () => {
     albumListIsLoading.value = true;
-    const {data} = await axiosInstance.get<Album[]>(
-        "/apis/picturebed.muyin.site/v1alpha1/albums",
-        {
-          params: {
-            type: picturebedType,
-            page: page.value,
-            size: size.value,
-            keyword: keyword?.value
-          },
-        }
-    );
+    const {data} = await pictureBedApisClient.pictureBed.albums({
+      pictureBedId: pictureBedId,
+      type: picturebedType,
+      page: page.value,
+      size: size.value,
+      keyword: keyword?.value
+    });
     const albums = [{
       id: "",
-      name: "未分组",
-      description: "未分组",
+      name: "全部",
+      description: "全部图片",
     }];
     albums.push(...data);
     selectedAlbum.value = albums[0];
@@ -100,18 +99,14 @@ let {
   queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
   queryFn: async () => {
     isLoading.value = true;
-    const {data} = await axiosInstance.get<PageResult<Image>>(
-        "/apis/picturebed.muyin.site/v1alpha1/images",
-        {
-          params: {
-            type: picturebedType,
-            page: page.value,
-            size: size.value,
-            keyword: keyword?.value,
-            albumId: selectedAlbum.value?.id
-          },
-        }
-    );
+    const {data} = await pictureBedApisClient.pictureBed.images({
+      pictureBedId: pictureBedId,
+      type: picturebedType,
+      page: page.value,
+      size: size.value,
+      keyword: keyword?.value,
+      albumId: selectedAlbum.value?.id
+    });
 
     totalLabel.value = `共 ${data.totalCount} 条`;
     total.value = data.totalCount;
@@ -165,15 +160,11 @@ const isDisabled = (image: Image) => {
 const deleteSelected = async () => {
   const selected = Array.from(selectedImages.value);
   selected.forEach((image) => {
-    axiosInstance.get(
-        "/apis/picturebed.muyin.site/v1alpha1/deleteImage",
-        {
-          params: {
-            type: "lsky",
-            imageId: image.id,
-          },
-        }
-    );
+    pictureBedApisClient.pictureBed.deleteImage({
+      pictureBedId: pictureBedId,
+      type: picturebedType,
+      imageId: image.id
+    });
     deletedImageIds.value.add(image.id);
   });
   selectedImages.value.clear();
@@ -225,12 +216,15 @@ watch(
     }
 );
 
-
 const handleReset = () => {
   selectedImage.value = undefined;
   selectedImages.value.clear();
   checkedAll.value = false;
 };
+
+onMounted(() => {
+  console.log("props", props);
+});
 </script>
 <template>
   <div>
@@ -405,6 +399,9 @@ const handleReset = () => {
   <ImageUploadModal
       :visible="uploadVisible"
       :picBedType="picturebedType"
+      :picBedId="pictureBedId"
+      :albumId="selectedAlbum?.id"
+      :key="selectedAlbum?.id"
       @close="uploadVisible = false; refetch();"
   />
 </template>

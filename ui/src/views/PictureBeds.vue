@@ -6,26 +6,11 @@ import MdiPicture360Outline from '~icons/mdi/picture-360-outline';
 import LskySelectorProvider from "@/components/LskySelectorProvider.vue";
 import SmmsSelectorProvider from "@/components/SmmsSelectorProvider.vue";
 import ImgtpSelectorProvider from "@/components/ImgtpSelectorProvider.vue";
-import {axiosInstance} from "@halo-dev/api-client";
 import {useQuery} from "@tanstack/vue-query";
+import {pictureBedApisClient} from "@/api";
 
-const pictureBedType = ref();
+const pictureBedKey = ref();
 const isLoading = ref(false);
-
-const pictureBeds = ref({
-  'lsky': {
-    label: '兰空图床',
-    value: 'lsky',
-  },
-  'smms': {
-    label: 'SM.MS图床',
-    value: 'smms',
-  },
-  'imgtp': {
-    label: 'ImgTP图床',
-    value: 'imgtp',
-  }
-});
 
 // 图床列表
 const {
@@ -34,17 +19,18 @@ const {
   queryKey: ['pictureBeds'],
   queryFn: async () => {
     isLoading.value = true;
-    const {data} = await axiosInstance.get(
-        "/apis/picturebed.muyin.site/v1alpha1/pictureBeds"
-    );
+    const {data} = await pictureBedApisClient.pictureBed.pictureBeds();
     const pictureBedsEnabled = [];
     data.forEach(item => {
       if (item.enabled) {
-        pictureBedsEnabled.push(pictureBeds.value[item.type]);
+        pictureBedsEnabled.push({
+          label: item.name,
+          value: item.key
+        });
       }
     });
     if (pictureBedsEnabled.length > 0) {
-      pictureBedType.value = pictureBedsEnabled[0].value;
+      pictureBedKey.value = pictureBedsEnabled[0].value;
     }
     isLoading.value = false;
     return pictureBedsEnabled;
@@ -60,23 +46,23 @@ const {
     </template>
     <template #actions>
       <FilterDropdown
-          v-model="pictureBedType"
+          v-model="pictureBedKey"
           label="图床"
-          :items="pictureBedsAvailable ?pictureBedsAvailable: []"
+          :items="pictureBedsAvailable ? pictureBedsAvailable: []"
       />
     </template>
   </VPageHeader>
   <div>
     <VLoading v-if="isLoading"/>
-    <VCard v-else>
-      <template v-if="pictureBedType === 'lsky'">
-        <LskySelectorProvider/>
+    <VCard v-else-if="pictureBedKey">
+      <template v-if="pictureBedKey.startsWith('lsky')">
+        <LskySelectorProvider :pictureBedKey="pictureBedKey" :key="pictureBedKey"/>
       </template>
-      <template v-else-if="pictureBedType === 'smms'">
-        <SmmsSelectorProvider/>
+      <template v-else-if="pictureBedKey.startsWith('smms')">
+        <SmmsSelectorProvider :pictureBedKey="pictureBedKey" :key="pictureBedKey"/>
       </template>
-      <template v-else-if="pictureBedType === 'imgtp'">
-        <ImgtpSelectorProvider/>
+      <template v-else-if="pictureBedKey.startsWith('imgtp')">
+        <ImgtpSelectorProvider :pictureBedKey="pictureBedKey" :key="pictureBedKey"/>
       </template>
       <VEmpty
           v-else
@@ -92,6 +78,12 @@ const {
         </template>
       </VEmpty>
     </VCard>
+    <VEmpty
+        v-else
+        message="请选择图床"
+        title="当前未选择图床"
+    >
+    </VEmpty>
   </div>
 
 </template>

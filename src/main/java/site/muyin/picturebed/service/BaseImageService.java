@@ -21,7 +21,7 @@ public interface BaseImageService<T> {
      * @author: lywq
      * @date: 2024/05/22 21:33
      **/
-    Mono<ResultsVO> uploadImage(MultiValueMap<String, ?> multipartData);
+    Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, ?> multipartData);
 
     /**
      * 获取图片列表

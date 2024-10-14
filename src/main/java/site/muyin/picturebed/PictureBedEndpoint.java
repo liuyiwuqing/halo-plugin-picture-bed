@@ -1,6 +1,5 @@
 package site.muyin.picturebed;
 
-import cn.hutool.json.JSONObject;
 import lombok.AllArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.MediaType;
@@ -18,6 +17,9 @@ import site.muyin.picturebed.config.PictureBedConfig;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.service.PictureBedService;
 import site.muyin.picturebed.utils.PluginCacheManager;
+import site.muyin.picturebed.vo.AlbumVO;
+import site.muyin.picturebed.vo.PageResult;
+import site.muyin.picturebed.vo.PictureBedVO;
 import site.muyin.picturebed.vo.ResultsVO;
 
 import java.util.ArrayList;
@@ -47,30 +49,51 @@ public class PictureBedEndpoint implements CustomEndpoint {
     public RouterFunction<ServerResponse> endpoint() {
         final var tag = "picturebed.muyin.site/v1alpha1/PictureBed";
         return SpringdocRouteBuilder.route()
-                .GET("albums", this::getAlbumList,
-                        builder -> builder.operationId("albums")
-                                .description("albums").tag(tag))
+                .GET("albums", this::getAlbumList, builder -> {
+                    builder.operationId("albums")
+                            .description("albums")
+                            .tag(tag)
+                            .response(responseBuilder().implementationArray(AlbumVO.class));
+                    CommonQuery.buildParameters(builder);
+                })
                 .GET("images", this::getImageList,
-                        builder -> builder.operationId("images")
-                                .description("images").tag(tag))
+                        builder -> {
+                            builder.operationId("images")
+                                    .description("images")
+                                    .tag(tag)
+                                    .response(responseBuilder().implementation(PageResult.class));
+                            CommonQuery.buildParameters(builder);
+                        })
                 .GET("deleteImage", this::deleteImage,
-                        builder -> builder.operationId("deleteImage")
-                                .description("deleteImage").tag(tag))
-                .POST("uploadImage", contentType(MediaType.MULTIPART_FORM_DATA),
-                        this::uploadImage, builder -> builder.operationId("uploadImage")
-                                .description("uploadImage")
-                                .tag(tag)
-                                .requestBody(requestBodyBuilder()
-                                        .required(true)
-                                        .content(contentBuilder()
-                                                .mediaType(MediaType.MULTIPART_FORM_DATA_VALUE)
-                                                .schema(schemaBuilder())
-                                        ))
-                                .response(responseBuilder().implementation(ResultsVO.class))
+                        builder -> {
+                            builder.operationId("deleteImage")
+                                    .description("deleteImage")
+                                    .tag(tag)
+                                    .response(responseBuilder().implementation(Boolean.class));
+                            CommonQuery.buildParameters(builder);
+                        })
+                .POST("uploadImage", contentType(MediaType.MULTIPART_FORM_DATA), this::uploadImage,
+                        builder -> {
+                            builder.operationId("uploadImage")
+                                    .description("uploadImage")
+                                    .tag(tag)
+                                    .requestBody(requestBodyBuilder()
+                                            .required(true)
+                                            .content(contentBuilder()
+                                                    .mediaType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                                                    .schema(schemaBuilder())
+                                            ))
+                                    .response(responseBuilder().implementation(ResultsVO.class));
+                            CommonQuery.buildParameters(builder);
+                        }
                 )
                 .GET("pictureBeds", this::getPictureBeds,
-                        builder -> builder.operationId("pictureBeds")
-                                .description("pictureBeds").tag(tag))
+                        builder -> {
+                            builder.operationId("pictureBeds")
+                                    .description("pictureBeds")
+                                    .tag(tag)
+                                    .response(responseBuilder().implementationArray(PictureBedVO.class));
+                        })
                 .build();
     }
 
@@ -80,10 +103,8 @@ public class PictureBedEndpoint implements CustomEndpoint {
         return multiValueMapMono.flatMap(multiValueMap -> {
             return pictureBedService.uploadImage(query, multiValueMap).flatMap(resultsVO -> {
                 if (resultsVO.getCode() == 200) {
-                    // return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(resultsVO);
                     return ServerResponse.ok().bodyValue(resultsVO.getMsg());
                 } else {
-                    // return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(resultsVO);
                     return Mono.error(new ServerWebInputException(resultsVO.getMsg()));
                 }
             });
@@ -117,12 +138,14 @@ public class PictureBedEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> getPictureBeds(ServerRequest serverRequest) {
         PictureBedConfig config = pluginCacheManager.getConfig(PictureBedConfig.class);
-        List<JSONObject> pictureBeds = new ArrayList<>();
+        List<PictureBedVO> pictureBeds = new ArrayList<>();
         config.getPictureBeds().forEach(pictureBed -> {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("type", pictureBed.getPictureBedType());
-            jsonObject.put("enabled", pictureBed.getPictureBedEnabled());
-            pictureBeds.add(jsonObject);
+            PictureBedVO pictureBedVO = new PictureBedVO();
+            pictureBedVO.setKey(pictureBed.getPictureBedType() + "_" + pictureBed.getPictureBedId())
+                    .setName(pictureBed.getPictureBedName())
+                    .setType(pictureBed.getPictureBedType())
+                    .setEnabled(pictureBed.getPictureBedEnabled());
+            pictureBeds.add(pictureBedVO);
         });
         return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(pictureBeds);
     }

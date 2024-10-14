@@ -1,31 +1,30 @@
 import {type AttachmentSelectProvider, definePlugin,} from "@halo-dev/console-shared";
-import {markRaw, ref} from "vue";
+import {markRaw} from "vue";
 import "./styles/tailwind.css";
 import MdiPicture360Outline from '~icons/mdi/picture-360-outline';
 import PictureBeds from "@/views/PictureBeds.vue";
 import LskySelectorProvider from "@/components/LskySelectorProvider.vue";
 import SmmsSelectorProvider from "@/components/SmmsSelectorProvider.vue";
 import ImgtpSelectorProvider from "@/components/ImgtpSelectorProvider.vue";
-import axios from "axios";
+import {pictureBedApisClient} from "@/api";
 
-
-const pictureBedSelectProviders = ref({
-    'lsky': {
-        id: "lsky-selector",
-        label: "兰空图床",
-        component: markRaw(LskySelectorProvider),
-    },
-    'smms': {
-        id: "smms-selector",
-        label: "SM.MS图床",
-        component: markRaw(SmmsSelectorProvider),
-    },
-    'imgtp': {
-        id: "imgtp-selector",
-        label: "ImgTP图床",
-        component: markRaw(ImgtpSelectorProvider),
-    }
-});
+function createAttachmentSelectProvider(item, component) {
+    const newComponent = {
+        ...component,
+        props: {
+            ...component.props,
+            pictureBedKey: {
+                type: String,
+                default: item.key,
+            }
+        }
+    };
+    return {
+        id: `${item.key}-selector`,
+        label: item.name,
+        component: markRaw(newComponent),
+    };
+}
 
 export default definePlugin({
     components: {},
@@ -53,12 +52,25 @@ export default definePlugin({
     extensionPoints: {
         "attachment:selector:create": async () => {
             const attachmentSelectProviders: AttachmentSelectProvider[] = [];
-            const {data} = await axios.get(
-                "/apis/picturebed.muyin.site/v1alpha1/pictureBeds"
-            );
+            const {data} = await pictureBedApisClient.pictureBed.pictureBeds();
             data.forEach(item => {
                 if (item.enabled) {
-                    attachmentSelectProviders.push(pictureBedSelectProviders.value[item.type]);
+                    let component;
+                    switch (item.type) {
+                        case 'lsky':
+                            component = LskySelectorProvider;
+                            break;
+                        case 'smms':
+                            component = SmmsSelectorProvider;
+                            break;
+                        case 'imgtp':
+                            component = ImgtpSelectorProvider;
+                            break;
+                        default:
+                            console.warn(`未找到对应组件: ${item.type}`);
+                            return;
+                    }
+                    attachmentSelectProviders.push(createAttachmentSelectProvider(item, component));
                 }
             });
             return attachmentSelectProviders;

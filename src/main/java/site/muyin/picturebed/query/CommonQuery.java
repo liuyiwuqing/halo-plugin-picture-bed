@@ -1,8 +1,14 @@
 package site.muyin.picturebed.query;
 
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import org.springdoc.core.fn.builders.operation.Builder;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
+import run.halo.app.extension.router.IListRequest;
 import run.halo.app.extension.router.SortableRequest;
+
+import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
+import static run.halo.app.extension.router.QueryParamBuildUtil.sortParameter;
 
 /**
  * @author: lywq
@@ -17,6 +23,10 @@ public class CommonQuery extends SortableRequest {
     public CommonQuery(ServerWebExchange exchange) {
         super(exchange);
         this.queryParams = exchange.getRequest().getQueryParams();
+    }
+
+    public String getPictureBedId() {
+        return queryParams.getFirst("pictureBedId");
     }
 
     public String getType() {
@@ -51,7 +61,39 @@ public class CommonQuery extends SortableRequest {
         return Integer.parseInt(size);
     }
 
-    public String getOrder() {
-        return queryParams.getFirst("order");
+    public static void buildParameters(Builder builder) {
+        IListRequest.buildParameters(builder);
+        builder.parameter(sortParameter())
+                .parameter(parameterBuilder()
+                        .in(ParameterIn.QUERY)
+                        .name("pictureBedId")
+                        .description("pictureBedId")
+                        .implementation(String.class)
+                        .required(false))
+                .parameter(parameterBuilder()
+                        .in(ParameterIn.QUERY)
+                        .name("type")
+                        .description("type")
+                        .implementation(String.class)
+                        .required(false))
+                .parameter(parameterBuilder()
+                        .in(ParameterIn.QUERY)
+                        .name("albumId")
+                        .description("albumId")
+                        .implementation(String.class)
+                        .required(false))
+                .parameter(parameterBuilder()
+                        .in(ParameterIn.QUERY)
+                        .name("imageId")
+                        .description("imageId")
+                        .implementation(String.class)
+                        .required(false))
+                .parameter(parameterBuilder()
+                        .in(ParameterIn.QUERY)
+                        .name("keyword")
+                        .implementation(String.class)
+                        .description("keyword")
+                        .required(false))
+        ;
     }
 }
