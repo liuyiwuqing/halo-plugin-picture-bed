@@ -1,0 +1,40 @@
+kind: Role
+apiVersion: v1alpha1
+metadata:
+  name: role-template-picturebed-manage
+  labels:
+    halo.run/role-template: "true"
+  annotations:
+    rbac.authorization.halo.run/ui-permissions: |
+      ["plugin:picturebed:manage"]
+    rbac.authorization.halo.run/display-name: "图床管理操作"
+    rbac.authorization.halo.run/module: "图床管理权限"
+rules:
+  - apiGroups:
+      - picturebed.muyin.site
+    resources:
+      - albums
+      - images
+      - deleteImage
+      - uploadImage
+      - pictureBeds
+    verbs:
+      - create
+      - list
+---
+kind: Role
+apiVersion: v1alpha1
+metadata:
+  name: role-template-picturebed-anonymous
+  labels:
+    halo.run/hidden: "true"
+    halo.run/role-template: "true"
+    rbac.authorization.halo.run/aggregate-to-anonymous: "true"
+  annotations:
+    rbac.authorization.halo.run/module: "图床管理权限"
+    rbac.authorization.halo.run/display-name: "PictureBed Anonymous AccessRole"
+rules:
+  - apiGroups:
+      - picturebed.muyin.site
+    resources: [ "public" ]
+    verbs: [ "*" ]

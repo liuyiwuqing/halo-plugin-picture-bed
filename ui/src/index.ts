@@ -1,12 +1,14 @@
 import {type AttachmentSelectProvider, definePlugin,} from "@halo-dev/console-shared";
 import {markRaw} from "vue";
 import "./styles/tailwind.css";
-import MdiPicture360Outline from '~icons/mdi/picture-360-outline';
+import MdiPicture360Outline from "~icons/mdi/picture-360-outline";
 import PictureBeds from "@/views/PictureBeds.vue";
 import LskySelectorProvider from "@/components/LskySelectorProvider.vue";
 import SmmsSelectorProvider from "@/components/SmmsSelectorProvider.vue";
 import ImgtpSelectorProvider from "@/components/ImgtpSelectorProvider.vue";
 import {pictureBedApisClient} from "@/api";
+import {consoleApiClient} from "@halo-dev/api-client";
+
 
 function createAttachmentSelectProvider(item, component) {
     const newComponent = {
@@ -37,6 +39,7 @@ export default definePlugin({
                 component: PictureBeds,
                 meta: {
                     title: "图床管理",
+                    permissions: ["plugin:picturebed:manage"],
                     searchable: true,
                     description: "图床管理后台",
                     menu: {
@@ -52,27 +55,34 @@ export default definePlugin({
     extensionPoints: {
         "attachment:selector:create": async () => {
             const attachmentSelectProviders: AttachmentSelectProvider[] = [];
-            const {data} = await pictureBedApisClient.pictureBed.pictureBeds();
-            data.forEach(item => {
-                if (item.enabled) {
-                    let component;
-                    switch (item.type) {
-                        case 'lsky':
-                            component = LskySelectorProvider;
-                            break;
-                        case 'smms':
-                            component = SmmsSelectorProvider;
-                            break;
-                        case 'imgtp':
-                            component = ImgtpSelectorProvider;
-                            break;
-                        default:
-                            console.warn(`未找到对应组件: ${item.type}`);
-                            return;
-                    }
-                    attachmentSelectProviders.push(createAttachmentSelectProvider(item, component));
-                }
-            });
+
+            const {data: currentPermissions} = await consoleApiClient.user.getPermissions({name: "-"});
+
+            if (currentPermissions.uiPermissions.includes("plugin:picturebed:manage")) {
+                const {data: pictureBedData} = await pictureBedApisClient.pictureBed.pictureBeds();
+
+                pictureBedData
+                    .filter(item => item.enabled)  // 仅保留已启用的项
+                    .forEach(item => {
+                        let component;
+                        switch (item.type) {
+                            case 'lsky':
+                                component = LskySelectorProvider;
+                                break;
+                            case 'smms':
+                                component = SmmsSelectorProvider;
+                                break;
+                            case 'imgtp':
+                                component = ImgtpSelectorProvider;
+                                break;
+                            default:
+                                console.warn(`未找到对应组件: ${item.type}`);
+                                return;
+                        }
+                        attachmentSelectProviders.push(createAttachmentSelectProvider(item, component));
+                    });
+            }
+
             return attachmentSelectProviders;
         },
     },

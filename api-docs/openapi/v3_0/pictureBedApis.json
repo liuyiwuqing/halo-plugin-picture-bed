@@ -2,11 +2,11 @@
   "openapi": "3.0.1",
   "info": {
     "title": "Halo",
-    "version": "2.19.0"
+    "version": "2.20.8"
   },
   "servers": [
     {
-      "url": "http://localhost:53154",
+      "url": "http://localhost:33016",
       "description": "Generated server url"
     }
   ],
