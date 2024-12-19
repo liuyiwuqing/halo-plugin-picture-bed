@@ -13,23 +13,23 @@ import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.endpoint.CustomEndpoint;
 import run.halo.app.extension.GroupVersion;
+import run.halo.app.plugin.ReactiveSettingFetcher;
 import site.muyin.picturebed.config.PictureBedConfig;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.service.PictureBedService;
-import site.muyin.picturebed.utils.PluginCacheManager;
 import site.muyin.picturebed.vo.AlbumVO;
 import site.muyin.picturebed.vo.PageResult;
 import site.muyin.picturebed.vo.PictureBedVO;
 import site.muyin.picturebed.vo.ResultsVO;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 import static org.springframework.web.reactive.function.server.RequestPredicates.contentType;
+import static site.muyin.picturebed.config.PictureBedConfig.GROUP;
 
 /**
  * @author: lywq
@@ -43,7 +43,7 @@ public class PictureBedEndpoint implements CustomEndpoint {
 
     private final PictureBedService pictureBedService;
 
-    private final PluginCacheManager pluginCacheManager;
+    private final ReactiveSettingFetcher settingFetcher;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -137,17 +137,22 @@ public class PictureBedEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> getPictureBeds(ServerRequest serverRequest) {
-        PictureBedConfig config = pluginCacheManager.getConfig(PictureBedConfig.class);
-        List<PictureBedVO> pictureBeds = new ArrayList<>();
-        config.getPictureBeds().forEach(pictureBed -> {
-            PictureBedVO pictureBedVO = new PictureBedVO();
-            pictureBedVO.setKey(pictureBed.getPictureBedType() + "_" + pictureBed.getPictureBedId())
-                    .setName(pictureBed.getPictureBedName())
-                    .setType(pictureBed.getPictureBedType())
-                    .setEnabled(pictureBed.getPictureBedEnabled());
-            pictureBeds.add(pictureBedVO);
-        });
-        return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(pictureBeds);
+        return settingFetcher.fetch(GROUP, PictureBedConfig.class)
+                .map(config -> config.getPictureBeds().stream()
+                        .map(this::convertToPictureBedVO)
+                        .collect(Collectors.toList()))
+                .flatMap(pictureBeds -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(pictureBeds));
+    }
+
+    private PictureBedVO convertToPictureBedVO(PictureBedConfig.PictureBed pictureBed) {
+        PictureBedVO pictureBedVO = new PictureBedVO();
+        pictureBedVO.setKey(pictureBed.getPictureBedType() + "_" + pictureBed.getPictureBedId())
+                .setName(pictureBed.getPictureBedName())
+                .setType(pictureBed.getPictureBedType())
+                .setEnabled(pictureBed.getPictureBedEnabled());
+        return pictureBedVO;
     }
 
     @Override

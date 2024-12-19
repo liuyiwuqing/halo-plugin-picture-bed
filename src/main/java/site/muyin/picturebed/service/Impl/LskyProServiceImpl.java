@@ -3,28 +3,36 @@ package site.muyin.picturebed.service.Impl;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
+import io.netty.channel.ChannelOption;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import run.halo.app.plugin.ReactiveSettingFetcher;
 import site.muyin.picturebed.config.PictureBedConfig;
 import site.muyin.picturebed.domain.LskyProAlbum;
 import site.muyin.picturebed.domain.LskyProImage;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.service.LskyProService;
-import site.muyin.picturebed.utils.PluginCacheManager;
 import site.muyin.picturebed.vo.PageResult;
 import site.muyin.picturebed.vo.ResultsVO;
 
+import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static site.muyin.picturebed.config.PictureBedConfig.GROUP;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.LSKY;
 
 /**
@@ -33,11 +41,24 @@ import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.LSKY;
  * @version: v1.0.0
  * @description:
  **/
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LskyProServiceImpl implements LskyProService {
 
-    private final PluginCacheManager pluginCacheManager;
+    private final ReactiveSettingFetcher settingFetcher;
+
+    private final WebClient webClient = WebClient.builder()
+            .clientConnector(new ReactorClientHttpConnector(
+                    HttpClient.create()
+                            .responseTimeout(Duration.ofSeconds(5)) // 设置响应超时时间
+                            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000) // 设置连接超时时间
+            ))
+            .defaultHeader(HttpHeaders.CACHE_CONTROL, "no-cache")
+            .defaultHeader(HttpHeaders.PRAGMA, "no-cache")
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .build();
 
     @Override
     public Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, ?> multipartData) {
@@ -61,12 +82,12 @@ public class LskyProServiceImpl implements LskyProService {
         paramMap.put("page", query.getPage());
         return req(query.getPictureBedId(), "albums", paramMap)
                 .map(response -> {
+                    List<LskyProAlbum> albumList = Collections.emptyList();
                     if (response.status) {
                         Map<String, Object> data = response.data;
-                        List<LskyProAlbum> albumList = JSONUtil.toList(JSONUtil.parseArray(data.get("data")), LskyProAlbum.class);
-                        return albumList;
+                        albumList = JSONUtil.toList(JSONUtil.parseArray(data.get("data")), LskyProAlbum.class);
                     }
-                    return null;
+                    return albumList;
                 });
     }
 
@@ -78,12 +99,29 @@ public class LskyProServiceImpl implements LskyProService {
         paramMap.put("page", query.getPage());
         return req(query.getPictureBedId(), "images", paramMap)
                 .map(response -> {
-                    if (response.status) {
+                    List<LskyProImage> imageList = Collections.emptyList();
+                    Integer currentPage = 1;
+                    Integer perPage = 10;
+                    Integer total = 0;
+                    Integer lastPage = 1;
+
+                    if (response != null && response.status) {
                         Map<String, Object> data = response.data;
-                        List<LskyProImage> imageList = JSONUtil.toList(JSONUtil.parseArray(data.get("data")), LskyProImage.class);
-                        return new PageResult<>((Integer) data.get("current_page"), (Integer) data.get("per_page"), (Integer) data.get("total"), (Integer) data.get("last_page"), imageList);
+                        imageList = Optional.ofNullable(data.get("data"))
+                                .map(d -> JSONUtil.toList(JSONUtil.parseArray(d), LskyProImage.class))
+                                .orElse(Collections.emptyList());
+
+                        currentPage = (Integer) data.getOrDefault("current_page", 1);
+                        perPage = (Integer) data.getOrDefault("per_page", 10);
+                        total = (Integer) data.getOrDefault("total", 0);
+                        lastPage = (Integer) data.getOrDefault("last_page", 1);
+
                     }
-                    return null;
+                    return new PageResult<>(currentPage, perPage, total, lastPage, imageList);
+                })
+                .onErrorResume(e -> {
+                    log.error("Error occurred while fetching image list: {}", e.getMessage());
+                    return Mono.just(new PageResult<>(1, 10, 0, 0, Collections.emptyList()));
                 });
     }
 
@@ -100,56 +138,69 @@ public class LskyProServiceImpl implements LskyProService {
     }
 
     private Mono<LskyProResponseRecord> req(String pictureBedId, String path, Map<String, Object> paramMap) {
-        PictureBedConfig pictureBedConfig = pluginCacheManager.getConfig(PictureBedConfig.class);
-        PictureBedConfig.PictureBed config = pictureBedConfig.getPictureBeds().stream().filter(p -> p.getPictureBedType().equals(LSKY) && p.getPictureBedId().equals(pictureBedId)).findFirst().orElseThrow();
-        String url = config.getPictureBedUrl();
-        String authorization = config.getPictureBedToken();
-        String pictureBedStrategyId = config.getPictureBedStrategyId();
-
-        WebClient WEB_CLIENT =
-                WebClient.builder()
-                        .defaultHeader(HttpHeaders.CACHE_CONTROL, "no-cache")
-                        .defaultHeader(HttpHeaders.PRAGMA, "no-cache")
-                        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                        .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                        .defaultHeader("Authorization", "Bearer " + authorization)
-                        .build();
-
-        switch (path) {
-            case "albums":
-            case "images":
-                paramMap.put("timestamp", System.currentTimeMillis());
-                return WEB_CLIENT.get()
-                        .uri(url + path + "?" + HttpUtil.toParams(paramMap))
-                        .retrieve()
-                        .bodyToMono(new ParameterizedTypeReference<>() {
-                        });
-            case "upload":
-                BodyInserters.MultipartInserter fromMultipartData = BodyInserters.fromMultipartData((MultiValueMap<String, ?>) paramMap.get("file"));
-                if (ObjectUtil.isNotEmpty(pictureBedStrategyId)) {
-                    fromMultipartData.with("strategy_id", Integer.valueOf(pictureBedStrategyId));
-                }
-                if (ObjectUtil.isNotEmpty(paramMap.get("album_id"))) {
-                    fromMultipartData.with("album_id", Integer.valueOf(paramMap.get("album_id").toString()));
-                }
-                return WEB_CLIENT.post()
-                        .uri(url + path)
-                        .contentType(MediaType.MULTIPART_FORM_DATA)
-                        .body(fromMultipartData)
-                        .retrieve()
-                        .bodyToMono(new ParameterizedTypeReference<>() {
-                        });
-            default:
-                if (path.startsWith("images/")) {
-                    return WEB_CLIENT.delete()
-                            .uri(url + path)
-                            .retrieve()
-                            .bodyToMono(new ParameterizedTypeReference<>() {
-                            });
-                } else {
-                    throw new IllegalArgumentException("Unsupported path: " + path);
-                }
+        if (path == null) {
+            return Mono.error(new IllegalArgumentException("Path cannot be null"));
         }
+
+        return settingFetcher.fetch(GROUP, PictureBedConfig.class)
+                .flatMap(pictureBedConfig -> {
+                    PictureBedConfig.PictureBed config = pictureBedConfig.getPictureBeds().stream().filter(p -> p.getPictureBedType().equals(LSKY) && p.getPictureBedId().equals(pictureBedId)).findFirst().orElseThrow();
+                    String url = config.getPictureBedUrl();
+                    String authorization = config.getPictureBedToken();
+                    String pictureBedStrategyId = config.getPictureBedStrategyId();
+
+                    WebClient client = webClient.mutate()
+                            .defaultHeader("Authorization", "Bearer " + authorization)
+                            .build();
+
+                    switch (path) {
+                        case "albums":
+                        case "images":
+                            paramMap.put("timestamp", System.currentTimeMillis());
+                            return client.get()
+                                    .uri(url + path + "?" + HttpUtil.toParams(paramMap))
+                                    .retrieve()
+                                    .bodyToMono(new ParameterizedTypeReference<LskyProResponseRecord>() {
+                                    })
+                                    .doOnError(error -> log.error("GET request failed", error))
+                                    .onErrorResume(error -> Mono.empty());
+                        case "upload":
+                            BodyInserters.MultipartInserter fromMultipartData = BodyInserters.fromMultipartData((MultiValueMap<String, ?>) paramMap.get("file"));
+
+                            if (ObjectUtil.isNotEmpty(pictureBedStrategyId)) {
+                                fromMultipartData.with("strategy_id", Integer.valueOf(pictureBedStrategyId));
+                            }
+                            if (ObjectUtil.isNotEmpty(paramMap.get("album_id"))) {
+                                fromMultipartData.with("album_id", Integer.valueOf(paramMap.get("album_id").toString()));
+                            }
+                            return client.post()
+                                    .uri(url + path)
+                                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                                    .body(fromMultipartData)
+                                    .retrieve()
+                                    .bodyToMono(new ParameterizedTypeReference<LskyProResponseRecord>() {
+                                    })
+                                    .doOnError(error -> log.error("POST request failed", error))
+                                    .onErrorResume(error -> Mono.empty());
+                        default:
+                            if (path.startsWith("images/")) {
+                                return client.delete()
+                                        .uri(url + path)
+                                        .retrieve()
+                                        .bodyToMono(new ParameterizedTypeReference<LskyProResponseRecord>() {
+                                        })
+                                        .doOnError(error -> log.error("DELETE request failed", error))
+                                        .onErrorResume(error -> Mono.empty());
+                            } else {
+                                return Mono.error(new IllegalArgumentException("Unsupported path: " + path));
+                            }
+                    }
+                })
+                .onErrorResume(error -> {
+                    log.error("Configuration fetch failed", error);
+                    return Mono.empty();
+                });
+
     }
 
     public record LskyProResponseRecord(boolean status, String message, Map<String, Object> data) {

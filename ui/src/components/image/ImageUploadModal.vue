@@ -30,12 +30,11 @@ const onVisibleChange = (visible: boolean) => {
 };
 
 const onUploaded = async (response: SuccessResponse) => {
-  console.log("上传结果", response);
   Toast.success("上传成功！");
 };
 
 const onError = (file: UppyFile, response: ErrorResponse) => {
-  console.log("上传失败", file, response, response.body);
+  console.error("上传失败", file, response, response.body);
 };
 
 const uploadUrl = `/apis/picturebed.muyin.site/v1alpha1/uploadImage?type=${props.picBedType}&pictureBedId=${props.picBedId}&albumId=${props.albumId}`;
