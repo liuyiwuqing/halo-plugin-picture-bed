@@ -23,6 +23,7 @@ import {useQuery} from "@tanstack/vue-query";
 import ImageDetailModal from "@/components/image/ImageDetailModal.vue";
 import ImageUploadModal from "@/components/image/ImageUploadModal.vue";
 import {pictureBedApisClient} from "@/api";
+import AttachmentFileTypeIcon from "@/components/icon/AttachmentFileTypeIcon.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -223,7 +224,6 @@ const handleReset = () => {
 };
 
 onMounted(() => {
-  console.log("props", props);
 });
 </script>
 <template>

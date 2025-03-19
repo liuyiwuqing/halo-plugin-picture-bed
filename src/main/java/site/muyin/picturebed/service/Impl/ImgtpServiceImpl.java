@@ -1,8 +1,5 @@
 package site.muyin.picturebed.service.Impl;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.http.HttpUtil;
-import cn.hutool.json.JSONUtil;
 import io.netty.channel.ChannelOption;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +11,7 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -23,6 +21,7 @@ import site.muyin.picturebed.config.PictureBedConfig;
 import site.muyin.picturebed.domain.ImgtpImage;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.service.ImgtpService;
+import site.muyin.picturebed.utils.PictureBedUtil;
 import site.muyin.picturebed.vo.PageResult;
 import site.muyin.picturebed.vo.ResultsVO;
 
@@ -75,12 +74,12 @@ public class ImgtpServiceImpl implements ImgtpService {
         Map<String, Object> paramMap = new HashMap(1);
         paramMap.put("page", query.getPage());
         paramMap.put("rows", query.getSize());
-        String params = HttpUtil.toParams(paramMap);
+        String params = PictureBedUtil.convertMapToUrlParams(paramMap);
 
         return req(query.getPictureBedId(), "images" + "?" + params, null)
                 .mapNotNull(response -> {
                     if (response.code == 200) {
-                        ImgtpImagePageRes imgtpImagePageRes = JSONUtil.toBean(JSONUtil.toJsonStr(response.data), ImgtpImagePageRes.class);
+                        ImgtpImagePageRes imgtpImagePageRes = PictureBedUtil.convertObject(response.data, ImgtpImagePageRes.class);
                         return new PageResult<>(imgtpImagePageRes.current_page, imgtpImagePageRes.per_page, imgtpImagePageRes.total, imgtpImagePageRes.last_page, imgtpImagePageRes.data);
                     }
                     return null;
@@ -89,12 +88,12 @@ public class ImgtpServiceImpl implements ImgtpService {
 
     @Override
     public Mono<Boolean> deleteImage(CommonQuery query) {
-        if (ObjectUtil.isEmpty(query.getImageId())) {
+        if (ObjectUtils.isEmpty(query.getImageId())) {
             return Mono.just(false);
         }
         Map<String, Object> paramMap = new HashMap(1);
         paramMap.put("id", query.getImageId());
-        String params = HttpUtil.toParams(paramMap);
+        String params = PictureBedUtil.convertMapToUrlParams(paramMap);
         return req(query.getPictureBedId(), "delete" + "?" + params, null)
                 .map(response -> {
                     return response.code == 200;

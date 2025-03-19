@@ -1,8 +1,5 @@
 package site.muyin.picturebed.service.Impl;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.http.HttpUtil;
-import cn.hutool.json.JSONUtil;
 import io.netty.channel.ChannelOption;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -22,6 +20,7 @@ import site.muyin.picturebed.domain.LskyProAlbum;
 import site.muyin.picturebed.domain.LskyProImage;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.service.LskyProService;
+import site.muyin.picturebed.utils.PictureBedUtil;
 import site.muyin.picturebed.vo.PageResult;
 import site.muyin.picturebed.vo.ResultsVO;
 
@@ -85,7 +84,7 @@ public class LskyProServiceImpl implements LskyProService {
                     List<LskyProAlbum> albumList = Collections.emptyList();
                     if (response.status) {
                         Map<String, Object> data = response.data;
-                        albumList = JSONUtil.toList(JSONUtil.parseArray(data.get("data")), LskyProAlbum.class);
+                        albumList = PictureBedUtil.convertObjectToList(data.get("data"), LskyProAlbum.class);
                     }
                     return albumList;
                 });
@@ -108,7 +107,7 @@ public class LskyProServiceImpl implements LskyProService {
                     if (response != null && response.status) {
                         Map<String, Object> data = response.data;
                         imageList = Optional.ofNullable(data.get("data"))
-                                .map(d -> JSONUtil.toList(JSONUtil.parseArray(d), LskyProImage.class))
+                                .map(d -> PictureBedUtil.convertObjectToList(d, LskyProImage.class))
                                 .orElse(Collections.emptyList());
 
                         currentPage = (Integer) data.getOrDefault("current_page", 1);
@@ -158,7 +157,7 @@ public class LskyProServiceImpl implements LskyProService {
                         case "images":
                             paramMap.put("timestamp", System.currentTimeMillis());
                             return client.get()
-                                    .uri(url + path + "?" + HttpUtil.toParams(paramMap))
+                                    .uri(url + path + "?" + PictureBedUtil.convertMapToUrlParams(paramMap))
                                     .retrieve()
                                     .bodyToMono(new ParameterizedTypeReference<LskyProResponseRecord>() {
                                     })
@@ -167,10 +166,10 @@ public class LskyProServiceImpl implements LskyProService {
                         case "upload":
                             BodyInserters.MultipartInserter fromMultipartData = BodyInserters.fromMultipartData((MultiValueMap<String, ?>) paramMap.get("file"));
 
-                            if (ObjectUtil.isNotEmpty(pictureBedStrategyId)) {
+                            if (!ObjectUtils.isEmpty(pictureBedStrategyId)) {
                                 fromMultipartData.with("strategy_id", Integer.valueOf(pictureBedStrategyId));
                             }
-                            if (ObjectUtil.isNotEmpty(paramMap.get("album_id"))) {
+                            if (!ObjectUtils.isEmpty(paramMap.get("album_id"))) {
                                 fromMultipartData.with("album_id", Integer.valueOf(paramMap.get("album_id").toString()));
                             }
                             return client.post()

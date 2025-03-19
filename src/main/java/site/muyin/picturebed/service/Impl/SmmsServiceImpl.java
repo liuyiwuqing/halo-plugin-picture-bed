@@ -1,8 +1,5 @@
 package site.muyin.picturebed.service.Impl;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.http.HttpUtil;
-import cn.hutool.json.JSONUtil;
 import io.netty.channel.ChannelOption;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +10,7 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -22,6 +20,7 @@ import site.muyin.picturebed.config.PictureBedConfig;
 import site.muyin.picturebed.domain.SmmsImage;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.service.SmmsService;
+import site.muyin.picturebed.utils.PictureBedUtil;
 import site.muyin.picturebed.vo.PageResult;
 import site.muyin.picturebed.vo.ResultsVO;
 
@@ -74,12 +73,12 @@ public class SmmsServiceImpl implements SmmsService {
     public Mono<PageResult<SmmsImage>> getImageList(CommonQuery query) {
         Map<String, Object> paramMap = new HashMap(1);
         paramMap.put("page", query.getPage());
-        String params = HttpUtil.toParams(paramMap);
+        String params = PictureBedUtil.convertMapToUrlParams(paramMap);
 
         return req(query.getPictureBedId(), "upload_history" + "?" + params, null)
                 .mapNotNull(response -> {
                     if (response.success) {
-                        List<SmmsImage> imageList = JSONUtil.toList(JSONUtil.parseArray(response.data), SmmsImage.class);
+                        List<SmmsImage> imageList = PictureBedUtil.convertObjectToList(response.data, SmmsImage.class);
                         return new PageResult<>(response.CurrentPage, response.PerPage, response.Count, response.TotalPages, imageList);
                     }
                     return null;
@@ -88,7 +87,7 @@ public class SmmsServiceImpl implements SmmsService {
 
     @Override
     public Mono<Boolean> deleteImage(CommonQuery query) {
-        if (ObjectUtil.isEmpty(query.getImageId())) {
+        if (ObjectUtils.isEmpty(query.getImageId())) {
             return Mono.just(false);
         }
         return req(query.getPictureBedId(), "delete/" + query.getImageId(), null)
