@@ -13,17 +13,17 @@ import {
   VPagination,
   VSpace,
 } from "@halo-dev/components";
-import {computed, onMounted, ref, watch, watchEffect} from "vue";
+import {computed, ref, watch} from "vue";
 import {isImage} from "@/utils/image";
 import type {AttachmentLike} from "@halo-dev/console-shared";
 import {matchMediaTypes} from "@/utils/media-type";
 import LazyImage from "@/components/image/LazyImage.vue";
-import type {Album, Image} from "@/types";
 import {useQuery} from "@tanstack/vue-query";
 import ImageDetailModal from "@/components/image/ImageDetailModal.vue";
 import ImageUploadModal from "@/components/image/ImageUploadModal.vue";
 import {pictureBedApisClient} from "@/api";
 import AttachmentFileTypeIcon from "@/components/icon/AttachmentFileTypeIcon.vue";
+import type {AlbumVO, ImageVO} from "@/api/generated";
 
 const props = withDefaults(
     defineProps<{
@@ -47,12 +47,10 @@ const emit = defineEmits<{
   (event: "change-provider", providerId: string): void;
 }>();
 
-const selectedImages = ref<Set<Image>>(new Set());
+const selectedImages = ref<Set<ImageVO>>(new Set());
 const deletedImageIds = ref<Set<string>>(new Set());
-const selectedAlbum = ref<Album>();
-const selectedImage = ref<Image | undefined>();
-const checkedAll = ref(false);
-
+const selectedAlbum = ref<AlbumVO>();
+const selectedImage = ref<ImageVO | undefined>();
 const uploadVisible = ref(false);
 const detailVisible = ref(false);
 const total = ref(0);
@@ -63,197 +61,148 @@ const totalLabel = ref("");
 const albumListIsLoading = ref(false);
 const isLoading = ref(false);
 
-const picturebedType = props.pictureBedKey.split("_")[0];
-const pictureBedId = props.pictureBedKey.split("_")[1];
+const picturebedType = computed(() => props.pictureBedKey.split("_")[0]);
+const pictureBedId = computed(() => props.pictureBedKey.split("_")[1]);
 
-// 相册列表
-let {
-  data: albumList,
-} = useQuery({
-  queryKey: [`albumList_${picturebedType}`, page, size, keyword],
+const {data: albumList} = useQuery({
+  queryKey: [`albumList_${picturebedType.value}`, page, size, keyword],
   queryFn: async () => {
     albumListIsLoading.value = true;
     const {data} = await pictureBedApisClient.pictureBed.albums({
-      pictureBedId: pictureBedId,
-      type: picturebedType,
+      pictureBedId: pictureBedId.value,
+      type: picturebedType.value,
       page: page.value,
       size: size.value,
-      keyword: keyword?.value
+      keyword: keyword.value,
     });
-    const albums = [{
-      id: "",
-      name: "全部",
-      description: "全部图片",
-    }];
-    albums.push(...data);
+    const albums = [
+      {
+        id: "",
+        name: "全部",
+        description: "全部图片",
+      },
+      ...data,
+    ];
     selectedAlbum.value = albums[0];
     albumListIsLoading.value = false;
     return albums;
   },
 });
 
-// 图片列表
-let {
-  data: imageList,
-  refetch,
-} = useQuery({
-  queryKey: [`imageList_${picturebedType}`, selectedAlbum, page, size, keyword],
+const {data: imageList, refetch} = useQuery({
+  queryKey: [`imageList_${picturebedType.value}`, selectedAlbum, page, size, keyword],
   queryFn: async () => {
     isLoading.value = true;
     const {data} = await pictureBedApisClient.pictureBed.images({
-      pictureBedId: pictureBedId,
-      type: picturebedType,
+      pictureBedId: pictureBedId.value,
+      type: picturebedType.value,
       page: page.value,
       size: size.value,
-      keyword: keyword?.value,
-      albumId: selectedAlbum.value?.id
+      keyword: keyword.value,
+      albumId: selectedAlbum.value?.id,
     });
 
     totalLabel.value = `共 ${data.totalCount} 条`;
-    total.value = data.totalCount;
-    page.value = data.page;
-    size.value = data.size;
+    total.value = data.totalCount as number;
+    page.value = data.page as number;
+    size.value = data.size as number;
     isLoading.value = false;
 
-    // 过滤已删除的图片
-    const images = data.list.filter((image) => {
-      return !deletedImageIds.value.has(image.id);
-    });
-
-    return images;
+    return (data.list as ImageVO[]).filter((image) => !deletedImageIds.value.has(image.id as string));
   },
-  // keepPreviousData: true,
   enabled: computed(() => selectedAlbum.value !== undefined),
 });
 
-const handleSelectAlbum = (album: Album) => {
+const handleSelectAlbum = (album: AlbumVO) => {
   selectedAlbum.value = album;
-  selectedImages.value = new Set();
+  selectedImages.value.clear();
   page.value = 1;
 };
 
-const isChecked = (image: Image) => {
-  return (
-      image.id === selectedImages.value?.id ||
-      Array.from(selectedImages.value)
-          .map((item) => item.id)
-          .includes(image.id)
-  );
-};
+const isChecked = (image: ImageVO) => selectedImages.value.has(image);
 
-const isDisabled = (image: Image) => {
-  const isMatchMediaType = matchMediaTypes(
-      image.mediaType || "*/*",
-      props.accepts
-  );
-
-  if (
-      props.max !== undefined &&
-      props.max <= selectedImages.value.size &&
-      !isChecked(image)
-  ) {
-    return true;
-  }
-
-  return !isMatchMediaType;
+const isDisabled = (image: ImageVO) => {
+  const isMatchMediaType = matchMediaTypes(image.mediaType || "*/*", props.accepts);
+  return props.max !== undefined && props.max <= selectedImages.value.size && !isChecked(image)
+      ? true
+      : !isMatchMediaType;
 };
 
 const deleteSelected = async () => {
   const selected = Array.from(selectedImages.value);
   selected.forEach((image) => {
     pictureBedApisClient.pictureBed.deleteImage({
-      pictureBedId: pictureBedId,
-      type: picturebedType,
-      imageId: image.id
+      pictureBedId: pictureBedId.value,
+      type: picturebedType.value,
+      imageId: image.id,
     });
-    deletedImageIds.value.add(image.id);
+    deletedImageIds.value.add(image.id as string);
   });
   selectedImages.value.clear();
   await refetch();
   emit("update:selected", []);
 };
 
-const handleSelect = async (image: Image | undefined) => {
-  if (!image) return;
+const handleSelect = (image: ImageVO) => {
   if (selectedImages.value.has(image)) {
     selectedImages.value.delete(image);
-    return;
+  } else {
+    selectedImages.value.add(image);
   }
-  selectedImages.value.add(image);
 };
 
-const handleOpenDetail = (image: Image) => {
+const handleOpenDetail = (image: ImageVO) => {
   selectedImage.value = image;
   detailVisible.value = true;
 };
 
-watchEffect(() => {
-  const images = Array.from(selectedImages.value).map((image) => {
-    return {
-      spec: {
-        displayName: image.name,
-        mediaType: image.mediaType,
-        size: image.size,
-      },
-      status: {
-        permalink: image.url,
-      }
-    }
-  });
-  emit("update:selected", images);
+watch(selectedImages, () => {
+  const images = Array.from(selectedImages.value).map((image) => ({
+    spec: {
+      displayName: image.name,
+      mediaType: image.mediaType,
+      size: image.size,
+    },
+    status: {
+      permalink: image.url,
+    },
+  }));
+  emit("update:selected", images as AttachmentLike[]);
 });
 
-watch(
-    () => selectedImages.value.size,
-    (newValue) => {
-      checkedAll.value = newValue === imageList.value?.length;
-    }
-);
-watch(
-    () => keyword.value,
-    () => {
-      selectedImages.value = new Set();
-      page.value = 1;
-    }
-);
-
-const handleReset = () => {
-  selectedImage.value = undefined;
+watch(keyword, () => {
   selectedImages.value.clear();
-  checkedAll.value = false;
-};
-
-onMounted(() => {
+  page.value = 1;
 });
 </script>
+
 <template>
   <div>
     <SearchInput placeholder="回车搜索" v-model="keyword"/>
   </div>
   <div
       v-if="!keyword"
-      class="picture-bed-topics picture-bed-mt-2 picture-bed-flex picture-bed-gap-x-2 picture-bed-gap-y-3 picture-bed-overflow-y-hidden picture-bed-overflow-x-hidden picture-bed-scroll-smooth picture-bed-pb-1"
+      class="topics mt-2 flex gap-x-2 gap-y-3 overflow-y-hidden overflow-x-hidden scroll-smooth pb-1"
   >
     <VLoading v-if="albumListIsLoading"/>
-    <div v-else
-         v-for="(album, index) in albumList"
-         :key="index"
-         :class="{
-        '!picture-bed-bg-gray-200 !picture-bed-text-gray-900':
-          album.id === selectedAlbum?.id,
+    <div
+        v-else
+        v-for="(album, index) in albumList"
+        :key="index"
+        :class="{
+        '!bg-gray-200 !text-gray-900': album.id === selectedAlbum?.id,
       }"
-         class="picture-bed-flex picture-bed-cursor-pointer picture-bed-items-center picture-bed-rounded picture-bed-bg-gray-100 picture-bed-p-2 picture-bed-text-gray-500 picture-bed-transition-all hover:picture-bed-bg-gray-200 hover:picture-bed-text-gray-900 hover:picture-bed-shadow-sm"
-         @click="handleSelectAlbum(album)"
+        class="flex cursor-pointer items-center rounded bg-gray-100 p-2 text-gray-500 transition-all hover:bg-gray-200 hover:text-gray-900 hover:shadow-sm"
+        @click="handleSelectAlbum(album)"
     >
-      <div
-          class="picture-bed-flex picture-bed-flex-1 picture-bed-items-center picture-bed-truncate"
-      >
-        <span class="picture-bed-truncate picture-bed-text-sm">
+      <div class="flex flex-1 items-center truncate">
+        <span class="truncate text-sm">
           {{ album.name }}
         </span>
       </div>
     </div>
   </div>
+
   <VSpace>
     <VButton @click="refetch">
       <template #icon>
@@ -267,13 +216,14 @@ onMounted(() => {
       </template>
       上传
     </VButton>
-    <VButton type="danger" v-if="selectedImages?.size > 0" @click="deleteSelected">
+    <VButton type="danger" v-if="selectedImages.size > 0" @click="deleteSelected">
       <template #icon>
         <IconDeleteBin class="h-full w-full"/>
       </template>
       删除
     </VButton>
   </VSpace>
+
   <VLoading v-if="isLoading"/>
   <VEmpty
       v-else-if="imageList?.length === 0"
@@ -282,9 +232,7 @@ onMounted(() => {
   >
     <template #actions>
       <VSpace>
-        <VButton @click="refetch">
-          刷新
-        </VButton>
+        <VButton @click="refetch">刷新</VButton>
         <VButton type="secondary" @click="uploadVisible = true">
           <template #icon>
             <IconUpload class="h-full w-full"/>
@@ -294,6 +242,7 @@ onMounted(() => {
       </VSpace>
     </template>
   </VEmpty>
+
   <div
       v-else
       class="mt-2 grid grid-cols-3 gap-x-2 gap-y-3 sm:grid-cols-3 md:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10"
@@ -305,16 +254,13 @@ onMounted(() => {
         :body-class="['!p-0']"
         :class="{
         'ring-1 ring-primary': isChecked(image),
-        'pointer-events-none !cursor-not-allowed opacity-50':
-          isDisabled(image),
+        'pointer-events-none !cursor-not-allowed opacity-50': isDisabled(image),
       }"
         class="hover:shadow"
         @click.stop="handleSelect(image)"
     >
       <div class="group relative bg-white">
-        <div
-            class="aspect-h-8 aspect-w-10 block h-full w-full cursor-pointer overflow-hidden bg-gray-100"
-        >
+        <div class="aspect-h-8 aspect-w-10 block h-full w-full cursor-pointer overflow-hidden bg-gray-100">
           <LazyImage
               v-if="isImage(image.mediaType)"
               :key="image.id"
@@ -324,27 +270,18 @@ onMounted(() => {
           >
             <template #loading>
               <div class="flex h-full items-center justify-center object-cover">
-                <span class="text-xs text-gray-400">
-                  加载中...
-                </span>
+                <span class="text-xs text-gray-400">加载中...</span>
               </div>
             </template>
             <template #error>
               <div class="flex h-full items-center justify-center object-cover">
-                <span class="text-xs text-red-400">
-                  加载异常
-                </span>
+                <span class="text-xs text-red-400">加载异常</span>
               </div>
             </template>
           </LazyImage>
-          <AttachmentFileTypeIcon
-              v-else
-              :file-name="image.name"
-          />
+          <AttachmentFileTypeIcon v-else :file-name="image.name"/>
         </div>
-        <p
-            class="pointer-events-none block truncate px-2 py-1 text-center text-xs font-medium text-gray-700"
-        >
+        <p class="pointer-events-none block truncate px-2 py-1 text-center text-xs font-medium text-gray-700">
           {{ image.name }}
         </p>
 
@@ -357,9 +294,7 @@ onMounted(() => {
               @click.stop="handleOpenDetail(image)"
           />
           <IconCheckboxFill
-              :class="{
-              '!text-primary': selectedImages.has(image),
-            }"
+              :class="{ '!text-primary': selectedImages.has(image) }"
               class="mr-1 mt-1 h-6 w-6 cursor-pointer text-white transition-all hover:text-primary"
           />
         </div>
@@ -378,17 +313,15 @@ onMounted(() => {
         :size-options="[40, 80, 120]"
     />
   </div>
+
   <ImageDetailModal
       v-model:visible="detailVisible"
       :mount-to-body="true"
       :imageSelected="selectedImage"
-      @close="detailVisible = false;"
+      @close="detailVisible = false"
   >
     <template #actions>
-      <span
-          v-if="selectedImage && selectedImages.has(selectedImage)"
-          @click="handleSelect(selectedImage)"
-      >
+      <span v-if="selectedImage && selectedImages.has(selectedImage)" @click="handleSelect(selectedImage)">
         <IconCheckboxFill/>
       </span>
       <span v-else @click="handleSelect(selectedImage)">
@@ -396,6 +329,7 @@ onMounted(() => {
       </span>
     </template>
   </ImageDetailModal>
+
   <ImageUploadModal
       :visible="uploadVisible"
       :picBedType="picturebedType"

@@ -1,21 +1,15 @@
 <script lang="ts" setup>
-import {
-  VButton,
-  VDescription,
-  VDescriptionItem,
-  VModal,
-  VSpace,
-} from "@halo-dev/components";
+import {VButton, VDescription, VDescriptionItem, VModal, VSpace,} from "@halo-dev/components";
 import LazyImage from "@/components/image/LazyImage.vue";
-import type {Image} from "@/types";
 import {isImage} from "@/utils/image";
 import {ref} from "vue";
 import prettyBytes from "pretty-bytes";
 import ImagePermalinkList from "@/components/image/ImagePermalinkList.vue";
+import type {ImageVO} from "@/api/generated";
 
 const props = withDefaults(
   defineProps<{
-    imageSelected: Image | undefined;
+    imageSelected: ImageVO | undefined;
     mountToBody?: boolean;
   }>(),
   {

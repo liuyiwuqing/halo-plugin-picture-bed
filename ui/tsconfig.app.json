@@ -8,6 +8,9 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["unplugin-icons/types/vue"]
+    "types": [
+      "unplugin-icons/types/vue"
+    ],
+    "verbatimModuleSyntax": true
   }
 }

@@ -11,6 +11,7 @@ index.ts
 models/add-operation.ts
 models/album-vo.ts
 models/copy-operation.ts
+models/image-vo.ts
 models/index.ts
 models/json-patch-inner.ts
 models/move-operation.ts

@@ -18,6 +18,7 @@ import site.muyin.picturebed.config.PictureBedConfig;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.service.PictureBedService;
 import site.muyin.picturebed.vo.AlbumVO;
+import site.muyin.picturebed.vo.ImageVO;
 import site.muyin.picturebed.vo.PageResult;
 import site.muyin.picturebed.vo.PictureBedVO;
 import site.muyin.picturebed.vo.ResultsVO;
@@ -61,7 +62,7 @@ public class PictureBedEndpoint implements CustomEndpoint {
                             builder.operationId("images")
                                     .description("images")
                                     .tag(tag)
-                                    .response(responseBuilder().implementation(PageResult.class));
+                                    .response(responseBuilder().implementation(PageResult.class).content(contentBuilder().mediaType(MediaType.APPLICATION_JSON_UTF8_VALUE).schema(schemaBuilder().implementation(ImageVO.class))));
                             CommonQuery.buildParameters(builder);
                         })
                 .GET("deleteImage", this::deleteImage,

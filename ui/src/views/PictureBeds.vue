@@ -8,35 +8,58 @@ import SmmsSelectorProvider from "@/components/SmmsSelectorProvider.vue";
 import ImgtpSelectorProvider from "@/components/ImgtpSelectorProvider.vue";
 import {useQuery} from "@tanstack/vue-query";
 import {pictureBedApisClient} from "@/api";
+import type {AttachmentLike} from "@halo-dev/console-shared";
 
-const pictureBedKey = ref();
+interface PictureBed {
+  label: string;
+  value: string;
+}
+
+interface PictureBedResponse {
+  name: string;
+  key: string;
+  enabled: boolean;
+}
+
+const pictureBedKey = ref<string>('');
 const isLoading = ref(false);
+const selectedAttachments = ref<AttachmentLike[]>([]);
 
 // 图床列表
 const {
   data: pictureBedsAvailable
-} = useQuery({
+} = useQuery<PictureBed[]>({
   queryKey: ['pictureBeds'],
   queryFn: async () => {
     isLoading.value = true;
-    const {data} = await pictureBedApisClient.pictureBed.pictureBeds();
-    const pictureBedsEnabled = [];
-    data.forEach(item => {
-      if (item.enabled) {
-        pictureBedsEnabled.push({
-          label: item.name,
-          value: item.key
-        });
+    try {
+      const {data} = await pictureBedApisClient.pictureBed.pictureBeds();
+      const pictureBedsEnabled: PictureBed[] = [];
+
+      (data as PictureBedResponse[]).forEach(item => {
+        if (item.enabled) {
+          pictureBedsEnabled.push({
+            label: item.name,
+            value: item.key
+          });
+        }
+      });
+
+      if (pictureBedsEnabled.length > 0) {
+        pictureBedKey.value = pictureBedsEnabled[0].value;
       }
-    });
-    if (pictureBedsEnabled.length > 0) {
-      pictureBedKey.value = pictureBedsEnabled[0].value;
+
+      return pictureBedsEnabled;
+    } finally {
+      isLoading.value = false;
     }
-    isLoading.value = false;
-    return pictureBedsEnabled;
   },
   enabled: true,
 });
+
+const handleAttachmentUpdate = (attachments: AttachmentLike[]) => {
+  selectedAttachments.value = attachments;
+};
 </script>
 
 <template>
@@ -48,21 +71,36 @@ const {
       <FilterDropdown
           v-model="pictureBedKey"
           label="图床"
-          :items="pictureBedsAvailable ? pictureBedsAvailable: []"
+          :items="pictureBedsAvailable ?? []"
       />
     </template>
   </VPageHeader>
-  <div>
+  <div class="w-full h-full">
     <VLoading v-if="isLoading"/>
     <VCard v-else-if="pictureBedKey">
       <template v-if="pictureBedKey.startsWith('lsky')">
-        <LskySelectorProvider :pictureBedKey="pictureBedKey" :key="pictureBedKey"/>
+        <LskySelectorProvider
+            :pictureBedKey="pictureBedKey"
+            :selected="selectedAttachments"
+            @update:selected="handleAttachmentUpdate"
+            :key="pictureBedKey"
+        />
       </template>
       <template v-else-if="pictureBedKey.startsWith('smms')">
-        <SmmsSelectorProvider :pictureBedKey="pictureBedKey" :key="pictureBedKey"/>
+        <SmmsSelectorProvider
+            :pictureBedKey="pictureBedKey"
+            :selected="selectedAttachments"
+            @update:selected="handleAttachmentUpdate"
+            :key="pictureBedKey"
+        />
       </template>
       <template v-else-if="pictureBedKey.startsWith('imgtp')">
-        <ImgtpSelectorProvider :pictureBedKey="pictureBedKey" :key="pictureBedKey"/>
+        <ImgtpSelectorProvider
+            :pictureBedKey="pictureBedKey"
+            :selected="selectedAttachments"
+            @update:selected="handleAttachmentUpdate"
+            :key="pictureBedKey"
+        />
       </template>
       <VEmpty
           v-else
@@ -82,12 +120,9 @@ const {
         v-else
         message="请选择图床"
         title="当前未选择图床"
-    >
-    </VEmpty>
+    />
   </div>
-
 </template>
 
 <style scoped>
-
 </style>

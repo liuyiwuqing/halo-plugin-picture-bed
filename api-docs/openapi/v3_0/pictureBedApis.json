@@ -2,11 +2,11 @@
   "openapi": "3.0.1",
   "info": {
     "title": "Halo",
-    "version": "2.20.8"
+    "version": "2.20.17"
   },
   "servers": [
     {
-      "url": "http://localhost:33016",
+      "url": "http://localhost:54807",
       "description": "Generated server url"
     }
   ],
@@ -352,6 +352,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/PageResult"
                 }
+              },
+              "application/json;charset=UTF-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageVO"
+                }
               }
             },
             "description": "default response"
@@ -573,6 +578,35 @@
             "type": "string",
             "description": "A JSON Pointer path pointing to the location to move/copy from.",
             "example": "/a/b/c"
+          }
+        }
+      },
+      "ImageVO": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mediaType": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number",
+            "format": "float"
+          },
+          "url": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

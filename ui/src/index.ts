@@ -10,7 +10,7 @@ import {pictureBedApisClient} from "@/api";
 import {consoleApiClient} from "@halo-dev/api-client";
 
 
-function createAttachmentSelectProvider(item, component) {
+function createAttachmentSelectProvider(item: any, component: any) {
     const newComponent = {
         ...component,
         props: {
@@ -36,7 +36,7 @@ export default definePlugin({
             route: {
                 path: "picture-bed",
                 name: "PictureBed",
-                component: PictureBeds,
+                component: PictureBeds as any,
                 meta: {
                     title: "图床管理",
                     permissions: ["plugin:picturebed:manage"],

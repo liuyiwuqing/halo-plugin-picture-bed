@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import {VButton} from "@halo-dev/components";
 import {computed, toRefs} from "vue";
-import type {Image} from "@/types";
 import {useAttachmentPermalinkCopy} from "@/utils/image";
+import type {ImageVO} from "@/api/generated";
 
 const props = withDefaults(
     defineProps<{
       visible: boolean;
-      image?: Image;
+      image?: ImageVO;
       mountToBody?: boolean;
     }>(),
     {
