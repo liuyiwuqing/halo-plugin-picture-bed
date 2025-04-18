@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id "com.github.node-gradle.node" version "7.0.2"
-    id "io.freefair.lombok" version "8.0.1"
+    id "io.freefair.lombok" version "8.6"
     id "run.halo.plugin.devtools" version "0.5.0"
 }
 
@@ -20,6 +20,7 @@ repositories {
 dependencies {
     implementation platform('run.halo.tools.platform:plugin:2.20.11')
     compileOnly 'run.halo.app:api'
+    annotationProcessor 'org.projectlombok:lombok'
 }
 
 test {

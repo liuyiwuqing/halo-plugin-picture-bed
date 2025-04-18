@@ -32,5 +32,7 @@ public class PictureBedConfig {
         private String pictureBedUrl;
         private String pictureBedToken;
         private String pictureBedStrategyId;
+        private String pictureBedClientId;
+        private String pictureBedClientSecret;
     }
 }
