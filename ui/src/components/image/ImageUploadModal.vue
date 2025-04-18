@@ -4,10 +4,10 @@ import type {ErrorResponse, SuccessResponse, UppyFile} from "@uppy/core";
 
 const props = withDefaults(
     defineProps<{
-      picBedType: string;
-      picBedId: string;
-      albumId: string;
-      visible: boolean;
+      picBedType?: string;
+      picBedId?: string;
+      albumId?: string;
+      visible?: boolean;
     }>(),
     {
       picBedType: "",
