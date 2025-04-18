@@ -12,5 +12,6 @@ public class CommonConstant {
         public static final String LSKY = "lsky";
         public static final String SMMS = "smms";
         public static final String IMGTP = "imgtp";
+        public static final String Pan123 = "pan123";
     }
 }

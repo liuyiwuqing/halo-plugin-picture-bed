@@ -3,7 +3,7 @@ kind: Setting
 metadata:
   name: picture-bed-settings
 spec:
-  forms: 
+  forms:
     - group: basic
       label: 基本设置
       formSchema:
@@ -26,7 +26,7 @@ spec:
               name: pictureBedType
               key: pictureBedType
               label: 图床类型
-              value: lsky
+              value: pan123
               options:
                 - label: 兰空图床
                   value: lsky
@@ -34,6 +34,8 @@ spec:
                   value: smms
                 - label: ImgTP图床
                   value: imgtp
+                - label: 123盘图床
+                  value: pan123
             - $formkit: text
               name: pictureBedName
               key: pictureBedName
@@ -71,3 +73,17 @@ spec:
               label: 储存策略ID
               value: ""
               help: 图床的存储策略 id
+            - $formkit: text
+              if: $value.pictureBedType === pan123
+              name: pictureBedClientId
+              key: pictureBedClientId
+              label: client_id
+              value: ""
+              help: 123云盘OpenAPI的 client_id
+            - $formkit: text
+              if: $value.pictureBedType === pan123
+              name: pictureBedClientSecret
+              key: pictureBedClientSecret
+              label: client_secret
+              value: ""
+              help: 123云盘OpenAPI的 client_secret

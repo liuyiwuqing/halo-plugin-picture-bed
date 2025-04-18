@@ -9,6 +9,7 @@ import reactor.core.publisher.Mono;
 import site.muyin.picturebed.domain.ImgtpImage;
 import site.muyin.picturebed.domain.LskyProAlbum;
 import site.muyin.picturebed.domain.LskyProImage;
+import site.muyin.picturebed.domain.Pan123Image;
 import site.muyin.picturebed.domain.SmmsImage;
 import site.muyin.picturebed.query.CommonQuery;
 import site.muyin.picturebed.vo.AlbumVO;
@@ -22,6 +23,7 @@ import java.util.List;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.IMGTP;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.LSKY;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.SMMS;
+import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.Pan123;
 
 /**
  * @author: lywq
@@ -36,6 +38,7 @@ public class PictureBedService {
     private final LskyProService lskyProService;
     private final SmmsService smmsService;
     private final ImgtpService imgtpService;
+    private final Pan123Service pan123Service;
 
     public Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, Part> parts) {
         String type = query.getType();
@@ -46,6 +49,8 @@ public class PictureBedService {
                 return smmsService.uploadImage(query, parts);
             case IMGTP:
                 return imgtpService.uploadImage(query, parts);
+            case Pan123:
+                return pan123Service.uploadImage(query, parts);
             default:
                 // TODO: get album list from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -88,6 +93,11 @@ public class PictureBedService {
                     PageResult<ImageVO> imageVOPageResult = convertImgtpImageListToImageVOList(imgtpImages);
                     return Mono.just(imageVOPageResult);
                 });
+            case Pan123:
+                return pan123Service.getImageList(query).flatMap(pan123Images -> {
+                    PageResult<ImageVO> imageVOPageResult = convertPan123ImageListToImageVOList(pan123Images);
+                    return Mono.just(imageVOPageResult);
+                });
             default:
                 // TODO: get image list from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -103,6 +113,8 @@ public class PictureBedService {
                 return smmsService.deleteImage(query);
             case IMGTP:
                 return imgtpService.deleteImage(query);
+            case Pan123:
+                return pan123Service.deleteImage(query);
             default:
                 // TODO: delete image from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -161,6 +173,20 @@ public class PictureBedService {
             return imageVO;
         }).toList();
         return new PageResult<>(imgtpImages.getPage(), imgtpImages.getSize(), imgtpImages.getTotalCount(), imgtpImages.getTotalPages(), imageVOList);
+    }
+
+    private PageResult<ImageVO> convertPan123ImageListToImageVOList(PageResult<Pan123Image> pan123Images) {
+        List<Pan123Image> imageList = pan123Images.getList();
+        List<ImageVO> imageVOList = imageList.stream().map(image -> {
+            ImageVO imageVO = new ImageVO();
+            imageVO.setId(image.getFileId())
+                   .setName(image.getFilename())
+                   .setUrl(image.getDownloadURL())
+                   .setMediaType(image.getType() == 0 ? getMediaType(image.getFilename()):"folder")
+                   .setSize(image.getSize());
+            return imageVO;
+        }).toList();
+        return new PageResult<>(pan123Images.getPage(), pan123Images.getSize(), pan123Images.getTotalCount(), pan123Images.getTotalPages(), imageVOList);
     }
 
     public static String getMediaType(String fileName) {

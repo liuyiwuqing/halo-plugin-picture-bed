@@ -1,13 +1,14 @@
-import {type AttachmentSelectProvider, definePlugin,} from "@halo-dev/console-shared";
-import {markRaw} from "vue";
-import "./styles/tailwind.css";
-import MdiPicture360Outline from "~icons/mdi/picture-360-outline";
-import PictureBeds from "@/views/PictureBeds.vue";
-import LskySelectorProvider from "@/components/LskySelectorProvider.vue";
-import SmmsSelectorProvider from "@/components/SmmsSelectorProvider.vue";
-import ImgtpSelectorProvider from "@/components/ImgtpSelectorProvider.vue";
-import {pictureBedApisClient} from "@/api";
-import {consoleApiClient} from "@halo-dev/api-client";
+import { type AttachmentSelectProvider, definePlugin, } from "@halo-dev/console-shared"
+import { markRaw } from "vue"
+import "./styles/tailwind.css"
+import MdiPicture360Outline from "~icons/mdi/picture-360-outline"
+import PictureBeds from "@/views/PictureBeds.vue"
+import LskySelectorProvider from "@/components/LskySelectorProvider.vue"
+import SmmsSelectorProvider from "@/components/SmmsSelectorProvider.vue"
+import ImgtpSelectorProvider from "@/components/ImgtpSelectorProvider.vue"
+import { pictureBedApisClient } from "@/api"
+import { consoleApiClient } from "@halo-dev/api-client"
+import Pan123SelectorProvider from "@/components/Pan123SelectorProvider.vue"
 
 
 function createAttachmentSelectProvider(item: any, component: any) {
@@ -74,6 +75,9 @@ export default definePlugin({
                                 break;
                             case 'imgtp':
                                 component = ImgtpSelectorProvider;
+                                break;
+                            case 'pan123':
+                                component = Pan123SelectorProvider;
                                 break;
                             default:
                                 console.warn(`未找到对应组件: ${item.type}`);
