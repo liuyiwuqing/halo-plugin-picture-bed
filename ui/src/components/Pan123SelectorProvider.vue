@@ -1,11 +1,7 @@
 <script lang="ts" setup>
 import {
   IconCheckboxCircle,
-  IconCheckboxFill,
-  IconDeleteBin,
-  IconEye,
-  IconRefreshLine,
-  IconUpload,
+  IconCheckboxFill, IconEye, IconUpload,
   VButton,
   VCard,
   VEmpty,
@@ -226,7 +222,7 @@ onMounted(() => {
     </div>
   </div>
 
-  <VSpace>
+  <!-- <VSpace>
     <VButton @click="refetch">
       <template #icon>
         <IconRefreshLine class="h-full w-full" />
@@ -245,7 +241,7 @@ onMounted(() => {
       </template>
       删除
     </VButton>
-  </VSpace>
+  </VSpace> -->
 
   <VLoading v-if="isLoading" />
   <VEmpty
