@@ -13,18 +13,18 @@ import {
   VLoading,
   VPagination,
   VSpace,
-} from "@halo-dev/components";
-import {computed, ref, watch} from "vue";
-import {isImage} from "@/utils/image";
-import type {AttachmentLike} from "@halo-dev/console-shared";
-import {matchMediaTypes} from "@/utils/media-type";
-import LazyImage from "@/components/image/LazyImage.vue";
-import {useQuery} from "@tanstack/vue-query";
-import ImageDetailModal from "@/components/image/ImageDetailModal.vue";
-import ImageUploadModal from "@/components/image/ImageUploadModal.vue";
-import {pictureBedApisClient} from "@/api";
-import AttachmentFileTypeIcon from "@/components/icon/AttachmentFileTypeIcon.vue";
-import type {AlbumVO, ImageVO} from "@/api/generated";
+} from "@halo-dev/components"
+import { computed, ref, watch } from "vue"
+import { isImage } from "@/utils/image"
+import type { AttachmentLike } from "@halo-dev/console-shared"
+import { matchMediaTypes } from "@/utils/media-type"
+import LazyImage from "@/components/image/LazyImage.vue"
+import { useQuery } from "@tanstack/vue-query"
+import ImageDetailModal from "@/components/image/ImageDetailModal.vue"
+import ImageUploadModal from "@/components/image/ImageUploadModal.vue"
+import { pictureBedApisClient } from "@/api"
+import AttachmentFileTypeIcon from "@/components/icon/AttachmentFileTypeIcon.vue"
+import type { AlbumVO, ImageVO } from "@/api/generated"
 
 const props = withDefaults(
     defineProps<{
@@ -170,12 +170,12 @@ watch(selectedImages, () => {
     },
   }));
   emit("update:selected", images as AttachmentLike[]);
-});
+}, { deep: true });
 
 watch(keyword, () => {
   selectedImages.value.clear();
   page.value = 1;
-});
+}, { deep: true });
 </script>
 
 <template>
