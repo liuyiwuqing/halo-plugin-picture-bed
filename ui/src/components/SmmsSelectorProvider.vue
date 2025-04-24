@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import {
+  Dialog,
   IconCheckboxCircle,
   IconCheckboxFill,
   IconDeleteBin,
@@ -96,17 +97,25 @@ const isDisabled = (image: ImageVO) => {
 
 const deleteSelected = async () => {
   const selected = Array.from(selectedImages.value);
-  selected.forEach((image) => {
-    pictureBedApisClient.pictureBed.deleteImage({
-      pictureBedId: pictureBedId.value,
-      type: picturebedType.value,
-      imageId: image.id,
-    });
-    deletedImageIds.value.add(image.id as string);
+  Dialog.warning({
+    title: "确认删除",
+    description: `确定要删除选中的 ${selected.length} 张图片吗?此操作不可恢复。`,
+    confirmText: "确定",
+    cancelText: "取消",
+    onConfirm: async () => {
+      selected.forEach((image) => {
+        pictureBedApisClient.pictureBed.deleteImage({
+          pictureBedId: pictureBedId.value,
+          type: picturebedType.value,
+          imageId: image.id,
+        });
+        deletedImageIds.value.add(image.id as string);
+      });
+      selectedImages.value.clear();
+      await refetch();
+      emit("update:selected", []);
+    },
   });
-  selectedImages.value.clear();
-  await refetch();
-  emit("update:selected", []);
 };
 
 const handleSelect = (image: ImageVO) => {
@@ -116,6 +125,33 @@ const handleSelect = (image: ImageVO) => {
     selectedImages.value.add(image);
   }
 };
+
+const handleSelectAll = () => {
+  if (!imageList.value) return;
+
+  const allSelected = imageList.value.every(image => selectedImages.value.has(image));
+
+  if (allSelected) {
+    // 如果全部已选中，则取消全选
+    imageList.value.forEach(image => {
+      if (selectedImages.value.has(image)) {
+        selectedImages.value.delete(image);
+      }
+    });
+  } else {
+    // 否则全选所有可选的图片
+    imageList.value.forEach(image => {
+      if (!isDisabled(image)) {
+        selectedImages.value.add(image);
+      }
+    });
+  }
+};
+
+const isAllSelected = computed(() => {
+  if (!imageList.value || imageList.value.length === 0) return false;
+  return imageList.value.every(image => selectedImages.value.has(image));
+});
 
 const handleOpenDetail = (image: ImageVO) => {
   selectedImage.value = image;
@@ -155,6 +191,12 @@ watch(keyword, () => {
         <IconUpload class="h-full w-full"/>
       </template>
       上传
+    </VButton>
+    <VButton v-if="props.max !== 1" @click="handleSelectAll">
+      <template #icon>
+        <IconCheckboxCircle class="h-full w-full"/>
+      </template>
+      {{ isAllSelected ? '取消全选' : '全选' }}
     </VButton>
     <VButton type="danger" v-if="selectedImages.size > 0" @click="deleteSelected">
       <template #icon>
@@ -205,7 +247,7 @@ watch(keyword, () => {
               v-if="isImage(image.mediaType)"
               :key="image.id"
               :alt="image.name"
-              :src="image.url"
+              :src="image.url || ''"
               classes="pointer-events-none object-cover group-hover:opacity-75 transform-gpu"
           >
             <template #loading>
@@ -264,7 +306,7 @@ watch(keyword, () => {
       <span v-if="selectedImage && selectedImages.has(selectedImage)" @click="handleSelect(selectedImage)">
         <IconCheckboxFill/>
       </span>
-      <span v-else @click="handleSelect(selectedImage)">
+      <span v-else @click="handleSelect(selectedImage as ImageVO)">
         <IconCheckboxCircle/>
       </span>
     </template>
