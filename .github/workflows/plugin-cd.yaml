@@ -1,0 +1,23 @@
+name: CD
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  cd:
+    # 使用稳定的分支、标签或SHA
+    uses: halo-sigs/reusable-workflows/.github/workflows/plugin-cd.yaml@v3
+    secrets:
+      # 发布到Halo应用商店所需的个人访问令牌
+      halo-pat: ${{ secrets.HALO_PAT }}
+    permissions:
+      contents: write
+    with:
+      # 指定UI项目路径
+      ui-path: "ui"
+      # 这是发布到Halo应用商店所必需的应用ID
+      app-id: "app-YDpUf"
+      # 可选：如果不想发布到应用商店，可以设置为true
+      # skip-appstore-release: false
