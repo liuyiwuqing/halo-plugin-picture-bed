@@ -13,16 +13,5 @@ jobs:
     # 使用稳定的分支、标签或SHA
     uses: halo-sigs/reusable-workflows/.github/workflows/plugin-ci.yaml@v3
     with:
-      # 指定UI项目路径为console
-      ui-path: "console"
-      # 可选：指定Node.js版本
-      node-version: "18"
-      # 可选：指定pnpm版本
-      pnpm-version: "8"
-      # 可选：指定Java版本
-      java-version: "17"
-      # 可选：构建产物路径
-      artifacts-path: build/libs
-    # 如果需要使用私有NPM仓库，可以添加以下配置
-    # secrets:
-    #   npm-auth-token: ${{ secrets.NPM_AUTH_TOKEN }}
+      # 指定UI项目路径
+      ui-path: "ui"
