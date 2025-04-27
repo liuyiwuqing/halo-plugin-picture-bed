@@ -132,9 +132,13 @@ public class Pan123ServiceImpl implements Pan123Service {
 
     @Override
     public Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, ?> multipartData) {
-        Map<String, Object> paramMap = new HashMap(1);
+        Map<String, Object> paramMap = new HashMap(4);
+        paramMap.put("parentFileID", query.getAlbumId());
         paramMap.put("file", multipartData);
-        paramMap.put("album_id", query.getAlbumId());
+        paramMap.put("filename", query.getKeyword());
+        paramMap.put("size", "文件大小");
+        paramMap.put("etag", "文件md5值");
+        paramMap.put("type", 1);
 
         return req(query.getPictureBedId(), "upload", paramMap)
                 .map(response -> {
@@ -155,17 +159,17 @@ public class Pan123ServiceImpl implements Pan123Service {
 
         return req(query.getPictureBedId(), "images", paramMap)
                 .flatMap(response -> {
-                    if (response != null &&!"ok".equals(response.message)) {
+                    if (response != null && !"ok".equals(response.message)) {
                         log.error("Failed to get image list: {}", response.message);
                         return Mono.error(new RuntimeException(response.message));
                     }
                     // lastFileId
                     Map<String, Object> data = response.data;
-                    var imageList =Optional.ofNullable(data.get("fileList"))
-                                .map(d -> PictureBedUtil.convertObjectToList(d, Pan123Image.class))
-                                .orElse(Collections.emptyList());
-                    if(data.get("lastFileId") != "-1") {
-                        var nextImageRep= new Pan123Image();
+                    var imageList = Optional.ofNullable(data.get("fileList"))
+                            .map(d -> PictureBedUtil.convertObjectToList(d, Pan123Image.class))
+                            .orElse(Collections.emptyList());
+                    if (data.get("lastFileId") != "-1") {
+                        var nextImageRep = new Pan123Image();
                         nextImageRep.setFileId(data.get("lastFileId").toString());
                         nextImageRep.setFilename("lastFileId");
                         nextImageRep.setType(2);
@@ -182,11 +186,11 @@ public class Pan123ServiceImpl implements Pan123Service {
 
     @Override
     public Mono<Boolean> deleteImage(CommonQuery query) {
-        Map<String, Object> paramMap = new HashMap(3);
-        paramMap.put("keyword", query.getKeyword());
-        paramMap.put("album_id", query.getAlbumId());
-        paramMap.put("page", query.getPage());
-        return req(query.getPictureBedId(), "images/" + query.getImageId(), paramMap)
+        Map<String, Object> paramMap = new HashMap(1);
+        // 将 imageId 包装成数组添加到 paramMap 中
+        paramMap.put("fileIDs", new String[] { query.getImageId() });
+        // "{\"fileIDs\": [\"yk6baz03t0l000d7w33fbyt8704m2bohDIYPAIDOBIY0DcxvDwFO\"]}"
+        return req(query.getPictureBedId(), "delete", paramMap)
                 .map(response -> {
                     return response.status;
                 });
@@ -203,7 +207,6 @@ public class Pan123ServiceImpl implements Pan123Service {
                             p -> p.getPictureBedType().equals(Pan123) && p.getPictureBedId().equals(pictureBedId))
                             .findFirst().orElseThrow();
                     String url = config.getPictureBedUrl();
-                    String pictureBedStrategyId = config.getPictureBedStrategyId();
                     String clientId = config.getPictureBedClientId();
                     String clientSecret = config.getPictureBedClientSecret();
                     // 获取access_token
@@ -229,14 +232,6 @@ public class Pan123ServiceImpl implements Pan123Service {
                             case "upload":
                                 BodyInserters.MultipartInserter fromMultipartData = BodyInserters
                                         .fromMultipartData((MultiValueMap<String, ?>) paramMap.get("file"));
-
-                                if (!ObjectUtils.isEmpty(pictureBedStrategyId)) {
-                                    fromMultipartData.with("strategy_id", Integer.valueOf(pictureBedStrategyId));
-                                }
-                                if (!ObjectUtils.isEmpty(paramMap.get("album_id"))) {
-                                    fromMultipartData.with("album_id",
-                                            Integer.valueOf(paramMap.get("album_id").toString()));
-                                }
                                 return client.post()
                                         .uri(url + path)
                                         .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -247,13 +242,15 @@ public class Pan123ServiceImpl implements Pan123Service {
                                         .doOnError(error -> log.error("POST request failed", error))
                                         .onErrorResume(error -> Mono.empty());
                             default:
-                                if (path.startsWith("images/")) {
-                                    return client.delete()
-                                            .uri(url + path)
+                                if (path.startsWith("delete")) {
+                                    return client.post()
+                                            .uri("https://open-api.123pan.com/api/v1/oss/file/delete")
+                                            .contentType(MediaType.APPLICATION_JSON)
+                                            .bodyValue(paramMap)
                                             .retrieve()
                                             .bodyToMono(new ParameterizedTypeReference<Pan123ResponseRecord>() {
                                             })
-                                            .doOnError(error -> log.error("DELETE request failed", error))
+                                            .doOnError(error -> log.error("DELETE 123pan image request failed", error))
                                             .onErrorResume(error -> Mono.empty());
                                 } else {
                                     return Mono.error(new IllegalArgumentException("Unsupported path: " + path));

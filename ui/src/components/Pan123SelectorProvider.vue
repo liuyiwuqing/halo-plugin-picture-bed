@@ -1,11 +1,7 @@
 <script lang="ts" setup>
 import {
   IconCheckboxCircle,
-  IconCheckboxFill,
-  IconDeleteBin,
-  IconEye,
-  IconRefreshLine,
-  IconUpload,
+  IconCheckboxFill, IconEye, IconUpload,
   VButton,
   VCard,
   VEmpty,
@@ -46,7 +42,6 @@ const emit = defineEmits<{
 }>()
 
 const selectedImages = ref<Set<ImageVO>>(new Set())
-const deletedImageIds = ref<Set<string>>(new Set())
 const selectedAlbum = ref<AlbumVO>()
 const selectedImage = ref<ImageVO | undefined>()
 const uploadVisible = ref(false)
@@ -125,20 +120,6 @@ const isDisabled = (image: ImageVO) => {
     : !isMatchMediaType
 }
 
-const deleteSelected = async () => {
-  const selected = Array.from(selectedImages.value)
-  selected.forEach((image) => {
-    pictureBedApisClient.pictureBed.deleteImage({
-      pictureBedId: pictureBedId.value,
-      type: picturebedType.value,
-      imageId: image.id,
-    })
-    deletedImageIds.value.add(image.id as string)
-  })
-  selectedImages.value.clear()
-  await refetch()
-  emit("update:selected", [])
-}
 
 const handleSelect = (image: ImageVO) => {
   if (selectedImages.value.has(image)) {
@@ -147,7 +128,14 @@ const handleSelect = (image: ImageVO) => {
     selectedImages.value.add(image)
     console.log(selectedImages.value)
   }
-  // 更新到halo选中
+}
+
+const handleOpenDetail = (image: ImageVO) => {
+  selectedImage.value = image
+  detailVisible.value = true
+}
+
+watch(selectedImages, () => {
   const images = Array.from(selectedImages.value).map((image) => ({
     spec: {
       displayName: image.name,
@@ -160,27 +148,7 @@ const handleSelect = (image: ImageVO) => {
   }))
   console.log(images)
   emit("update:selected", images as AttachmentLike[])
-}
-
-const handleOpenDetail = (image: ImageVO) => {
-  selectedImage.value = image
-  detailVisible.value = true
-}
-
-// watch(selectedImages, () => {
-//   const images = Array.from(selectedImages.value).map((image) => ({
-//     spec: {
-//       displayName: image.name,
-//       mediaType: image.mediaType,
-//       size: image.size,
-//     },
-//     status: {
-//       permalink: image.url,
-//     },
-//   }))
-//   console.log(images)
-//   emit("update:selected", images as AttachmentLike[])
-// })
+}, { deep: true })
 
 watch(lastFileId, () => {
   selectedImages.value.clear()
@@ -226,7 +194,7 @@ onMounted(() => {
     </div>
   </div>
 
-  <VSpace>
+  <!-- <VSpace>
     <VButton @click="refetch">
       <template #icon>
         <IconRefreshLine class="h-full w-full" />
@@ -245,7 +213,7 @@ onMounted(() => {
       </template>
       删除
     </VButton>
-  </VSpace>
+  </VSpace> -->
 
   <VLoading v-if="isLoading" />
   <VEmpty
