@@ -1,7 +1,9 @@
 <script lang="ts" setup>
 import {
+  Dialog,
+  IconDeleteBin,
   IconCheckboxCircle,
-  IconCheckboxFill, IconEye, IconUpload,
+  IconCheckboxFill, IconEye,
   VButton,
   VCard,
   VEmpty,
@@ -42,6 +44,8 @@ const emit = defineEmits<{
 }>()
 
 const selectedImages = ref<Set<ImageVO>>(new Set())
+const deletedImageIds = ref<Set<string>>(new Set())
+const allImageList = ref<ImageVO[]>([])
 const selectedAlbum = ref<AlbumVO>()
 const selectedImage = ref<ImageVO | undefined>()
 const uploadVisible = ref(false)
@@ -73,7 +77,7 @@ const { data: imageList, refetch } = useQuery({
       albumId: selectedAlbum.value?.id,
     })
 
-    let imagesResult: ImageVO[] = []
+    let imagesResult: ImageVO[] = allImageList.value
     if (data.list) {
       data.list.forEach((image: ImageVO) => {
         if (image.mediaType == 'folder') {
@@ -108,6 +112,8 @@ const handleSelectAlbum = (album: AlbumVO) => {
   selectedAlbum.value = album
   selectedImages.value.clear()
   lastFileId.value = ""
+  keyword.value = lastFileId.value
+  allImageList.value = []
   page.value = 1
 }
 
@@ -120,6 +126,28 @@ const isDisabled = (image: ImageVO) => {
     : !isMatchMediaType
 }
 
+const deleteSelected = async () => {
+  const selected = Array.from(selectedImages.value)
+  Dialog.warning({
+    title: "确认删除",
+    description: `确定要删除选中的 ${selected.length} 张图片吗?此操作不可恢复。`,
+    confirmText: "确定",
+    cancelText: "取消",
+    onConfirm: async () => {
+      selected.forEach((image) => {
+        pictureBedApisClient.pictureBed.deleteImage({
+          pictureBedId: pictureBedId.value,
+          type: picturebedType.value,
+          imageId: image.id,
+        })
+        deletedImageIds.value.add(image.id as string)
+      })
+      selectedImages.value.clear()
+      await refetch()
+      emit("update:selected", [])
+    },
+  })
+}
 
 const handleSelect = (image: ImageVO) => {
   if (selectedImages.value.has(image)) {
@@ -129,6 +157,33 @@ const handleSelect = (image: ImageVO) => {
     console.log(selectedImages.value)
   }
 }
+
+const handleSelectAll = () => {
+  if (!imageList.value) return
+
+  const allSelected = imageList.value.every(image => selectedImages.value.has(image))
+
+  if (allSelected) {
+    // 如果全部已选中，则取消全选
+    imageList.value.forEach(image => {
+      if (selectedImages.value.has(image)) {
+        selectedImages.value.delete(image)
+      }
+    })
+  } else {
+    // 否则全选所有可选的图片
+    imageList.value.forEach(image => {
+      if (!isDisabled(image)) {
+        selectedImages.value.add(image)
+      }
+    })
+  }
+}
+const isAllSelected = computed(() => {
+  if (!imageList.value || imageList.value.length === 0) return false
+  return imageList.value.every(image => selectedImages.value.has(image))
+})
+
 
 const handleOpenDetail = (image: ImageVO) => {
   selectedImage.value = image
@@ -193,6 +248,20 @@ onMounted(() => {
       </div>
     </div>
   </div>
+  <VSpace>
+    <VButton v-if="props.max !== 1" @click="handleSelectAll">
+      <template #icon>
+        <IconCheckboxCircle class="h-full w-full" />
+      </template>
+      {{ isAllSelected ? '取消全选' : '全选' }}
+    </VButton>
+    <VButton type="danger" v-if="selectedImages.size > 0" @click="deleteSelected">
+      <template #icon>
+        <IconDeleteBin class="h-full w-full" />
+      </template>
+      删除
+    </VButton>
+  </VSpace>
 
   <!-- <VSpace>
     <VButton @click="refetch">
@@ -223,12 +292,6 @@ onMounted(() => {
     <template #actions>
       <VSpace>
         <VButton @click="refetch">刷新</VButton>
-        <VButton type="secondary" @click="uploadVisible = true">
-          <template #icon>
-            <IconUpload class="h-full w-full" />
-          </template>
-          上传
-        </VButton>
       </VSpace>
     </template>
   </VEmpty>
