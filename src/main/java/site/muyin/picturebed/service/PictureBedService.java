@@ -142,7 +142,8 @@ public class PictureBedService {
                     .setHeight(image.getHeight());
             return imageVO;
         }).toList();
-        return new PageResult<>(page.getPage(), page.getSize(), page.getTotalCount(), page.getTotalPages(), imageVOList);
+        return new PageResult<>(page.getPage(), page.getSize(), page.getTotalCount(), page.getTotalPages(),
+                imageVOList);
     }
 
     private PageResult<ImageVO> convertSmmsImageListToImageVOList(PageResult<SmmsImage> page) {
@@ -158,7 +159,8 @@ public class PictureBedService {
                     .setHeight(image.getHeight());
             return imageVO;
         }).toList();
-        return new PageResult<>(page.getPage(), page.getSize(), page.getTotalCount(), page.getTotalPages(), imageVOList);
+        return new PageResult<>(page.getPage(), page.getSize(), page.getTotalCount(), page.getTotalPages(),
+                imageVOList);
     }
 
     private PageResult<ImageVO> convertImgtpImageListToImageVOList(PageResult<ImgtpImage> imgtpImages) {
@@ -172,7 +174,8 @@ public class PictureBedService {
                     .setSize(image.getSize());
             return imageVO;
         }).toList();
-        return new PageResult<>(imgtpImages.getPage(), imgtpImages.getSize(), imgtpImages.getTotalCount(), imgtpImages.getTotalPages(), imageVOList);
+        return new PageResult<>(imgtpImages.getPage(), imgtpImages.getSize(), imgtpImages.getTotalCount(),
+                imgtpImages.getTotalPages(), imageVOList);
     }
 
     private PageResult<ImageVO> convertPan123ImageListToImageVOList(PageResult<Pan123Image> pan123Images) {
@@ -180,18 +183,29 @@ public class PictureBedService {
         List<ImageVO> imageVOList = imageList.stream().map(image -> {
             ImageVO imageVO = new ImageVO();
             imageVO.setId(image.getFileId())
-                   .setName(image.getFilename())
-                   .setUrl(image.getDownloadURL())
-                   .setMediaType(image.getType() == 0 ? getMediaType(image.getFilename()):"folder")
-                   .setSize(image.getSize());
+                    .setName(image.getFilename())
+                    .setUrl(image.getDownloadURL())
+                    .setMediaType(image.getType() == 0 ? getMediaTypeForPan123(image.getFilename()) : "folder")
+                    .setSize(image.getSize());
             return imageVO;
         }).toList();
-        return new PageResult<>(pan123Images.getPage(), pan123Images.getSize(), pan123Images.getTotalCount(), pan123Images.getTotalPages(), imageVOList);
+        return new PageResult<>(pan123Images.getPage(), pan123Images.getSize(), pan123Images.getTotalCount(),
+                pan123Images.getTotalPages(), imageVOList);
     }
 
     public static String getMediaType(String fileName) {
         MimetypesFileTypeMap fileTypeMap = new MimetypesFileTypeMap();
         File file = new File(fileName);
+        return fileTypeMap.getContentType(file);
+    }
+
+    // fix: 123盘的webp文件类型识别错误为application/octet-stream，需要手动指定
+    public static String getMediaTypeForPan123(String fileName) {
+        MimetypesFileTypeMap fileTypeMap = new MimetypesFileTypeMap();
+        File file = new File(fileName);
+        if (fileName.endsWith(".webp")) {
+            return "image/webp";
+        }
         return fileTypeMap.getContentType(file);
     }
 }
