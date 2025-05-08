@@ -13,5 +13,7 @@ jobs:
     # 使用稳定的分支、标签或SHA
     uses: halo-sigs/reusable-workflows/.github/workflows/plugin-ci.yaml@v3
     with:
+      node-version: "20"
+      pnpm-version: "10"
       # 指定UI项目路径
       ui-path: "ui"

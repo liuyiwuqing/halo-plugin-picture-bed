@@ -15,6 +15,8 @@ jobs:
     permissions:
       contents: write
     with:
+      node-version: "20"
+      pnpm-version: "10"
       # 指定UI项目路径
       ui-path: "ui"
       # 这是发布到Halo应用商店所必需的应用ID
