@@ -3,7 +3,8 @@
 ## 交流群
 
 [点击链接加入群聊【halo博客-lywq插件】](https://qm.qq.com/q/wuC7NZr0sw)
-![halo插件交流群](https://github.com/user-attachments/assets/bf162401-07fd-49ec-b50f-5218c9510937)
+
+<img src="https://github.com/user-attachments/assets/bf162401-07fd-49ec-b50f-5218c9510937" style="height: 400px !important; width: auto; object-fit: contain;" />
 
 ## 介绍
 
