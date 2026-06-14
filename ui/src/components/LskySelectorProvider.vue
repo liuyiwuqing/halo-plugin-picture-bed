@@ -7,6 +7,7 @@ import {
   IconEye,
   IconRefreshLine,
   IconUpload,
+  Toast,
   VButton,
   VCard,
   VEmpty,
@@ -14,17 +15,17 @@ import {
   VPagination,
   VSpace,
 } from "@halo-dev/components"
-import { computed, ref, watch } from "vue"
-import { isImage } from "@/utils/image"
-import type { AttachmentLike } from "@halo-dev/ui-shared"
-import { matchMediaTypes } from "@/utils/media-type"
+import {computed, ref, watch} from "vue"
+import {isImage} from "@/utils/image"
+import type {AttachmentLike} from "@halo-dev/ui-shared"
+import {matchMediaTypes} from "@/utils/media-type"
 import LazyImage from "@/components/image/LazyImage.vue"
-import { useQuery } from "@tanstack/vue-query"
+import {useQuery} from "@tanstack/vue-query"
 import ImageDetailModal from "@/components/image/ImageDetailModal.vue"
 import ImageUploadModal from "@/components/image/ImageUploadModal.vue"
-import { pictureBedApisClient } from "@/api"
+import {pictureBedApisClient} from "@/api"
 import AttachmentFileTypeIcon from "@/components/icon/AttachmentFileTypeIcon.vue"
-import type { AlbumVO, ImageVO } from "@/api/generated"
+import type {AlbumVO, ImageVO} from "@/api/generated"
 
 const props = withDefaults(
     defineProps<{
@@ -137,17 +138,34 @@ const deleteSelected = async () => {
     confirmText: "确定",
     cancelText: "取消",
     onConfirm: async () => {
-      selected.forEach((image) => {
+      const deleteResults = await Promise.allSettled(selected.map((image) =>
         pictureBedApisClient.pictureBed.deleteImage({
           pictureBedId: pictureBedId.value,
           type: picturebedType.value,
           imageId: image.id,
-        });
-        deletedImageIds.value.add(image.id as string);
+        }).then(({data}) => ({
+          imageId: image.id as string,
+          success: Boolean(data),
+        }))
+      ));
+      let failedCount = 0;
+
+      deleteResults.forEach((result) => {
+        if (result.status === "fulfilled" && result.value.success) {
+          deletedImageIds.value.add(result.value.imageId);
+          return;
+        }
+        failedCount += 1;
       });
       selectedImages.value.clear();
       await refetch();
       emit("update:selected", []);
+
+      if (failedCount === 0) {
+        Toast.success(`已删除 ${selected.length} 张图片`);
+      } else {
+        Toast.warning(`已删除 ${selected.length - failedCount} 张图片，${failedCount} 张删除失败`);
+      }
     },
   });
 };

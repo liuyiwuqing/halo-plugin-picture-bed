@@ -29,11 +29,24 @@ const onVisibleChange = (visible: boolean) => {
   }
 };
 
+const getResponseMessage = (body: unknown, fallback: string) => {
+  if (typeof body === "string" && body) {
+    return body;
+  }
+
+  if (body && typeof body === "object" && "msg" in body && typeof body.msg === "string") {
+    return body.msg;
+  }
+
+  return fallback;
+};
+
 const onUploaded = async (response: SuccessResponse) => {
-  Toast.success("上传成功！");
+  Toast.success(getResponseMessage(response.body, "上传成功！"));
 };
 
 const onError = (file: UppyFile, response: ErrorResponse) => {
+  Toast.error(getResponseMessage(response.body, "上传失败，请检查图床配置或网络连接"));
   console.error("上传失败", file, response, response.body);
 };
 

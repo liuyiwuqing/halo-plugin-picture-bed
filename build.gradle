@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id "io.freefair.lombok" version "8.13"
-    id "run.halo.plugin.devtools" version "0.6.2"
+    id "io.freefair.lombok" version "9.2.0"
+    id "run.halo.plugin.devtools" version "0.8.0"
 }
 
 group 'site.muyin.picturebed'
@@ -11,12 +11,8 @@ repositories {
 }
 
 dependencies {
-    implementation platform('run.halo.tools.platform:plugin:2.22.0')
+    implementation platform('run.halo.tools.platform:plugin:2.24.0')
     compileOnly 'run.halo.app:api'
-
-    testImplementation 'run.halo.app:api'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {
@@ -46,13 +42,18 @@ tasks.named('classes') {
 }
 
 halo {
-    version = '2.22.0'
+    externalUrl = 'https://plugin.orb.local'
+    version = '2.25.0'
+    debug = true
+//    suspend = true
+    port = 8686
+    debugPort = 8787
+    containerName = 'plugin'
 }
-
-
 
 haloPlugin {
     openApi {
+        useExistingServer = true
         outputDir = file("$rootDir/api-docs/openapi/v3_0")
         groupingRules {
             pictureBedApis {

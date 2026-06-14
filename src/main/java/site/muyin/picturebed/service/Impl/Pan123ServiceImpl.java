@@ -25,18 +25,17 @@ import site.muyin.picturebed.vo.ResultsVO;
 
 import java.time.DateTimeException;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static site.muyin.picturebed.config.PictureBedConfig.GROUP;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.Pan123;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.stream.Collectors;
 
 /**
  * @author: lywq
@@ -49,16 +48,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class Pan123ServiceImpl implements Pan123Service {
     private static class TokenCache {
-        // 建议使用 volatile 保证可见性
         volatile String accessToken;
-        // 添加异常时间容错（建议减少10%的有效期）
-        volatile long expiresIn;
-        volatile long timestamp;
+
+        volatile long effectiveExpiresAtMillis;
+
+        boolean isValid(long currentTimeMillis) {
+            return accessToken != null && currentTimeMillis < effectiveExpiresAtMillis;
+        }
     }
 
-    private static final TokenCache tokenCache = new TokenCache();
-
     private final ReactiveSettingFetcher settingFetcher;
+    private final Map<String, TokenCache> tokenCaches = new ConcurrentHashMap<>();
 
     private final WebClient webClient = WebClient.builder()
             .clientConnector(new ReactorClientHttpConnector(
@@ -74,12 +74,13 @@ public class Pan123ServiceImpl implements Pan123Service {
             .build();
 
     private Mono<String> getAccessToken(String clientId, String clientSecret) {
-        // 添加缓存有效性检查（减少10%有效期）和日志
-        if (tokenCache.accessToken != null &&
-                (System.currentTimeMillis() - tokenCache.timestamp) < (tokenCache.expiresIn * 1000 * 0.9)) {
-            log.debug("Using cached access token [Expires at {}]",
-                    LocalDateTime.ofEpochSecond((tokenCache.timestamp + tokenCache.expiresIn * 1000) / 1000, 0,
-                            ZoneOffset.ofHours(8)));
+        if (ObjectUtils.isEmpty(clientId) || ObjectUtils.isEmpty(clientSecret)) {
+            return Mono.error(new IllegalArgumentException("123盘图床缺少 client_id 或 client_secret 配置"));
+        }
+
+        TokenCache tokenCache = tokenCaches.computeIfAbsent(clientId, key -> new TokenCache());
+        long currentTimeMillis = System.currentTimeMillis();
+        if (tokenCache.isValid(currentTimeMillis)) {
             return Mono.just(tokenCache.accessToken);
         }
 
@@ -97,34 +98,36 @@ public class Pan123ServiceImpl implements Pan123Service {
                         log.info("Access token response: {}", response);
                         Map<String, Object> data = (Map<String, Object>) response.get("data");
                         if (data != null && data.containsKey("accessToken") && data.containsKey("expiredAt")) {
-                            // 空值安全检查
-                            String newToken = Optional.ofNullable(data.get("accessToken").toString())
+                            String newToken = Optional.ofNullable(data.get("accessToken"))
+                                    .map(Object::toString)
+                                    .filter(token -> !token.isBlank())
                                     .orElseThrow(() -> {
-                                        tokenCache.accessToken = null; // 清除无效缓存
+                                        tokenCache.accessToken = null;
+                                        tokenCache.effectiveExpiresAtMillis = 0;
                                         return new RuntimeException("Empty access token");
                                     });
 
                             try {
-                                // 添加时区异常处理
-                                LocalDateTime expiredDateTime = LocalDateTime.parse(
+                                OffsetDateTime expiredDateTime = OffsetDateTime.parse(
                                         data.get("expiredAt").toString(),
                                         DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                                 long currentTime = System.currentTimeMillis();
-                                long expiredTime = expiredDateTime.toEpochSecond(ZoneOffset.of("+08:00")) * 1000;
-                                tokenCache.expiresIn = (long) ((expiredTime - currentTime) / 1000 * 0.9); // 减少10%有效期
-                                tokenCache.timestamp = currentTime;
+                                long effectiveExpiresAtMillis = currentTime
+                                                                + Math.max((expiredDateTime.toInstant().toEpochMilli() - currentTime) * 9 / 10, 0);
                                 tokenCache.accessToken = newToken;
+                                tokenCache.effectiveExpiresAtMillis = effectiveExpiresAtMillis;
                                 log.info("Access token updated [Expires at {}]", expiredDateTime);
                                 return Mono.just(newToken);
                             } catch (DateTimeException e) {
                                 log.error("Invalid date format: {}", data.get("expiredAt"), e);
-                                tokenCache.accessToken = null; // 清除无效缓存
+                                tokenCache.accessToken = null;
+                                tokenCache.effectiveExpiresAtMillis = 0;
                                 return Mono.error(new RuntimeException("Invalid expiration date format"));
                             }
                         }
                     }
-                    // 响应无效时清除缓存
                     tokenCache.accessToken = null;
+                    tokenCache.effectiveExpiresAtMillis = 0;
                     log.warn("Invalid token response: {}", response);
                     return Mono.error(new RuntimeException("Invalid token response structure"));
                 });
@@ -168,7 +171,7 @@ public class Pan123ServiceImpl implements Pan123Service {
                     var imageList = Optional.ofNullable(data.get("fileList"))
                             .map(d -> PictureBedUtil.convertObjectToList(d, Pan123Image.class))
                             .orElse(Collections.emptyList());
-                    if (data.get("lastFileId") != "-1") {
+                    if (!Objects.equals(String.valueOf(data.get("lastFileId")), "-1")) {
                         var nextImageRep = new Pan123Image();
                         nextImageRep.setFileId(data.get("lastFileId").toString());
                         nextImageRep.setFilename("lastFileId");

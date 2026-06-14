@@ -22,8 +22,8 @@ import java.util.List;
 
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.IMGTP;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.LSKY;
-import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.SMMS;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.Pan123;
+import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.SMMS;
 
 /**
  * @author: lywq
@@ -61,18 +61,16 @@ public class PictureBedService {
         String type = query.getType();
         switch (type) {
             case LSKY:
-                return lskyProService.getAlbumList(query).flatMap(albumList -> {
-                    List<AlbumVO> albumVOList = convertLskyProAlbumListToAlbumVOList(albumList);
-                    return Mono.just(albumVOList);
-                });
+                return lskyProService.getAlbumList(query)
+                        .map(PictureBedService::convertLskyProAlbumListToAlbumVOList)
+                        .defaultIfEmpty(List.of());
             case SMMS:
-                // TODO: get album list from smms
+            case IMGTP:
+            case Pan123:
+                return Mono.just(List.of());
             default:
-                // TODO: get album list from other picture bed service
-                break;
+                throw new IllegalArgumentException("暂不支持该图片托管服务");
         }
-
-        return null;
     }
 
     public Mono<PageResult<ImageVO>> getImageList(CommonQuery query) {

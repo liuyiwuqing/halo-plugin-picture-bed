@@ -86,7 +86,9 @@ refactor(picturebed): 重构图床插件代码并优化插件兼容性
 
 ## 插件使用文档
 
-请访问：<https://blog.muyin.site/docs>
+优先阅读仓库内说明：[docs/user-guide.md](docs/user-guide.md)
+
+在线文档：<https://blog.muyin.site/docs>
 
 ## 精选插件
 
@@ -105,7 +107,7 @@ refactor(picturebed): 重构图床插件代码并优化插件兼容性
 
 所需环境：
 
-1. Java 17
+1. Java 21
 2. Node 18
 3. pnpm 8
 4. Docker (可选)

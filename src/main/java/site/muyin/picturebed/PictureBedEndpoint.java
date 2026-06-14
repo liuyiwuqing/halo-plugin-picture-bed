@@ -9,7 +9,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.endpoint.CustomEndpoint;
 import run.halo.app.extension.GroupVersion;
@@ -23,6 +22,8 @@ import site.muyin.picturebed.vo.PageResult;
 import site.muyin.picturebed.vo.PictureBedVO;
 import site.muyin.picturebed.vo.ResultsVO;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
@@ -62,7 +63,7 @@ public class PictureBedEndpoint implements CustomEndpoint {
                             builder.operationId("images")
                                     .description("images")
                                     .tag(tag)
-                                    .response(responseBuilder().implementation(PageResult.class).content(contentBuilder().mediaType(MediaType.APPLICATION_JSON_UTF8_VALUE).schema(schemaBuilder().implementation(ImageVO.class))));
+                                    .response(responseBuilder().implementation(PageResult.class).content(contentBuilder().mediaType(MediaType.APPLICATION_JSON_VALUE).schema(schemaBuilder().implementation(ImageVO.class))));
                             CommonQuery.buildParameters(builder);
                         })
                 .GET("deleteImage", this::deleteImage,
@@ -101,45 +102,55 @@ public class PictureBedEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> uploadImage(ServerRequest serverRequest) {
         CommonQuery query = new CommonQuery(serverRequest.exchange());
         Mono<MultiValueMap<String, Part>> multiValueMapMono = serverRequest.multipartData();
-        return multiValueMapMono.flatMap(multiValueMap -> {
-            return pictureBedService.uploadImage(query, multiValueMap).flatMap(resultsVO -> {
-                if (resultsVO.getCode() == 200) {
-                    return ServerResponse.ok().bodyValue(resultsVO.getMsg());
-                } else {
-                    return Mono.error(new ServerWebInputException(resultsVO.getMsg()));
-                }
-            });
-        });
+        return multiValueMapMono.flatMap(multiValueMap -> pictureBedService.uploadImage(query, multiValueMap)
+                .switchIfEmpty(Mono.just(ResultsVO.failure("上传失败，请检查图床配置或网络连接")))
+                .flatMap(resultsVO -> {
+                    if (resultsVO.getCode() == 200) {
+                        return ServerResponse.ok()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(resultsVO);
+                    }
+                    return ServerResponse.badRequest()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(resultsVO);
+                }));
     }
 
     private Mono<ServerResponse> getAlbumList(ServerRequest serverRequest) {
         CommonQuery query = new CommonQuery(serverRequest.exchange());
-        return pictureBedService.getAlbumList(query).flatMap(albumVOList -> {
-            return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(albumVOList);
-        });
+        return pictureBedService.getAlbumList(query)
+                .defaultIfEmpty(List.of())
+                .flatMap(albumVOList -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(albumVOList));
     }
 
     private Mono<ServerResponse> getImageList(ServerRequest serverRequest) {
         CommonQuery query = new CommonQuery(serverRequest.exchange());
-        return pictureBedService.getImageList(query).flatMap(pageResult -> {
-            return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(pageResult);
-        });
+        PageResult<ImageVO> emptyResult = new PageResult<>(query.getPage(), query.getSize(), 0, 0, List.of());
+        return pictureBedService.getImageList(query)
+                .defaultIfEmpty(emptyResult)
+                .flatMap(pageResult -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(pageResult));
     }
 
     private Mono<ServerResponse> deleteImage(ServerRequest serverRequest) {
         CommonQuery query = new CommonQuery(serverRequest.exchange());
-        return pictureBedService.deleteImage(query).flatMap(result -> {
+        return pictureBedService.deleteImage(query).defaultIfEmpty(false).flatMap(result -> {
             if (result) {
-                return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(result);
+                return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(result);
             } else {
-                return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON_UTF8).bodyValue(result);
+                return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON).bodyValue(result);
             }
         });
     }
 
     private Mono<ServerResponse> getPictureBeds(ServerRequest serverRequest) {
         return settingFetcher.fetch(GROUP, PictureBedConfig.class)
-                .map(config -> config.getPictureBeds().stream()
+                .defaultIfEmpty(new PictureBedConfig())
+                .map(config -> Optional.ofNullable(config.getPictureBeds()).orElse(List.of()).stream()
+                        .filter(pictureBed -> pictureBed.getPictureBedType() != null)
                         .map(this::convertToPictureBedVO)
                         .collect(Collectors.toList()))
                 .flatMap(pictureBeds -> ServerResponse.ok()
@@ -152,7 +163,7 @@ public class PictureBedEndpoint implements CustomEndpoint {
         pictureBedVO.setKey(pictureBed.getPictureBedType() + "_" + pictureBed.getPictureBedId())
                 .setName(pictureBed.getPictureBedName())
                 .setType(pictureBed.getPictureBedType())
-                .setEnabled(pictureBed.getPictureBedEnabled());
+                .setEnabled(Boolean.TRUE.equals(pictureBed.getPictureBedEnabled()));
         return pictureBedVO;
     }
 

@@ -7,12 +7,17 @@ spec:
     - group: basic
       label: 基本设置
       formSchema:
-        - $formkit: repeater
+        - $formkit: array
           name: pictureBeds
           label: 图床接口
           value: []
           help: 图床接口配置
           min: 1
+          itemLabels:
+            - type: text
+              label: $value.pictureBedName
+            - type: text
+              label: $value.pictureBedType
           children:
             - $formkit: text
               disabled: true
@@ -43,15 +48,11 @@ spec:
               value: ""
               help: 图床名称
               validation: required
-            - $formkit: select
+            - $formkit: switch
               name: pictureBedEnabled
               key: pictureBedEnabled
               label: 是否启用
-              options:
-                - label: 是
-                  value: true
-                - label: 否
-                  value: false
+              value: false
             - $formkit: text
               name: pictureBedUrl
               key: pictureBedUrl
@@ -67,21 +68,21 @@ spec:
               help: 图床 API Token
               validation: required
             - $formkit: text
-              if: $value.pictureBedType === lsky
+              if: "$value.pictureBedType === 'lsky'"
               name: pictureBedStrategyId
               key: pictureBedStrategyId
               label: 储存策略ID
               value: ""
               help: 图床的存储策略 id
             - $formkit: text
-              if: $value.pictureBedType === pan123
+              if: "$value.pictureBedType === 'pan123'"
               name: pictureBedClientId
               key: pictureBedClientId
               label: client_id
               value: ""
               help: 123云盘OpenAPI的 client_id
             - $formkit: text
-              if: $value.pictureBedType === pan123
+              if: "$value.pictureBedType === 'pan123'"
               name: pictureBedClientSecret
               key: pictureBedClientSecret
               label: client_secret

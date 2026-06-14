@@ -4,7 +4,7 @@ metadata:
   name: PictureBed
 spec:
   enabled: true
-  requires: ">=2.22.0"
+  requires: ">=2.25.0"
   author:
     name: lywq
     website: https://blog.muyin.site
