@@ -309,8 +309,9 @@ watch(keyword, () => {
 
   <ImageDetailModal
     v-model:visible="detailVisible"
+    v-model:image-selected="selectedImage"
     :mount-to-body="true"
-    :imageSelected="selectedImage"
+    :images="imageList || []"
     @close="detailVisible = false">
     <template #actions>
       <span v-if="selectedImage && selectedImages.has(selectedImage)" @click="handleSelect(selectedImage)">
