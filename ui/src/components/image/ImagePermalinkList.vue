@@ -1,50 +1,47 @@
 <script lang="ts" setup>
-import {VButton} from "@halo-dev/components";
-import {computed, toRefs} from "vue";
-import {useAttachmentPermalinkCopy} from "@/utils/image";
-import type {ImageVO} from "@/api/generated";
+import {VButton} from '@halo-dev/components'
+import {computed, toRefs} from 'vue'
+import {useAttachmentPermalinkCopy} from '@/utils/image'
+import type {ImageVO} from '@/api/generated'
 
 const props = withDefaults(
     defineProps<{
-      image?: ImageVO;
+      image?: ImageVO
     }>(),
     {
       image: undefined,
-    }
-);
+    },
+)
 
-const {image} = toRefs(props);
+const {image} = toRefs(props)
 
-const {handleCopy, htmlText, markdownText} =
-    useAttachmentPermalinkCopy(image);
+const {handleCopy, htmlText, markdownText} = useAttachmentPermalinkCopy(image)
 
 const formats = computed(
     (): {
-      label: string;
-      key: "url" | "html" | "markdown";
-      value?: string;
+      label: string
+      key: 'url' | 'html' | 'markdown'
+      value?: string
     }[] => {
       return [
         {
-          label: "URL",
-          key: "url",
+          label: 'URL',
+          key: 'url',
           value: image.value?.url,
         },
         {
-          label: "HTML",
-          key: "html",
+          label: 'HTML',
+          key: 'html',
           value: htmlText.value,
         },
         {
-          label: "Markdown",
-          key: "markdown",
+          label: 'Markdown',
+          key: 'markdown',
           value: markdownText.value,
         },
-      ];
-    }
-);
-
-
+      ]
+    },
+)
 </script>
 
 <template>
@@ -62,9 +59,7 @@ const formats = computed(
           </span>
         </div>
         <div>
-          <VButton size="sm" @click="handleCopy(format.key)">
-            复制
-          </VButton>
+          <VButton size="sm" @click="handleCopy(format.key)"> 复制</VButton>
         </div>
       </div>
     </li>

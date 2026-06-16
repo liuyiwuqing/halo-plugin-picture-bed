@@ -7,43 +7,43 @@ import {
   VDescriptionItem,
   VModal,
   VSpace,
-} from "@halo-dev/components";
-import LazyImage from "@/components/image/LazyImage.vue";
-import {isImage} from "@/utils/image";
-import {computed} from "vue";
-import prettyBytes from "pretty-bytes";
-import ImagePermalinkList from "@/components/image/ImagePermalinkList.vue";
-import type {ImageVO} from "@/api/generated";
-import {getAdjacentImage, getImageIndex} from "@/components/image/image-navigation";
+} from '@halo-dev/components'
+import LazyImage from '@/components/image/LazyImage.vue'
+import {isImage} from '@/utils/image'
+import {computed} from 'vue'
+import prettyBytes from 'pretty-bytes'
+import ImagePermalinkList from '@/components/image/ImagePermalinkList.vue'
+import type {ImageVO} from '@/api/generated'
+import {getAdjacentImage, getImageIndex} from '@/components/image/image-navigation'
 
 const props = withDefaults(
   defineProps<{
-    imageSelected: ImageVO | undefined;
-    images?: ImageVO[];
-    mountToBody?: boolean;
+    imageSelected: ImageVO | undefined
+    images?: ImageVO[]
+    mountToBody?: boolean
   }>(),
   {
     imageSelected: undefined,
     images: () => [],
     mountToBody: false,
-  }
-);
+  },
+)
 
 const emit = defineEmits<{
-  (event: "close"): void;
-  (event: "update:imageSelected", image: ImageVO): void;
-}>();
+  (event: 'close'): void
+  (event: 'update:imageSelected', image: ImageVO): void
+}>()
 
-const currentImage = computed(() => props.imageSelected);
-const currentImageIndex = computed(() => getImageIndex(props.images, currentImage.value));
-const showImageNavigation = computed(() => props.images.length > 1 && currentImageIndex.value >= 0);
-const hasPreviousImage = computed(() => !!getAdjacentImage(props.images, currentImage.value, -1));
-const hasNextImage = computed(() => !!getAdjacentImage(props.images, currentImage.value, 1));
+const currentImage = computed(() => props.imageSelected)
+const currentImageIndex = computed(() => getImageIndex(props.images, currentImage.value))
+const showImageNavigation = computed(() => props.images.length > 1 && currentImageIndex.value >= 0)
+const hasPreviousImage = computed(() => !!getAdjacentImage(props.images, currentImage.value, -1))
+const hasNextImage = computed(() => !!getAdjacentImage(props.images, currentImage.value, 1))
 
 function switchImage(offset: -1 | 1) {
-  const image = getAdjacentImage(props.images, currentImage.value, offset);
+  const image = getAdjacentImage(props.images, currentImage.value, offset)
   if (image) {
-    emit("update:imageSelected", image);
+    emit('update:imageSelected', image)
   }
 }
 </script>
@@ -85,9 +85,7 @@ function switchImage(offset: -1 | 1) {
     <div class="overflow-hidden bg-white">
       <div>
         <div class="border-b border-gray-100 bg-gray-50 px-4 py-4 sm:px-6">
-          <div class="mb-3 text-sm font-medium text-gray-900">
-            预览
-          </div>
+          <div class="mb-3 text-sm font-medium text-gray-900">预览</div>
           <div
               class="flex min-h-[260px] items-center justify-center overflow-hidden rounded border border-gray-100 bg-white p-3 sm:min-h-[360px]"
           >
@@ -99,14 +97,10 @@ function switchImage(offset: -1 | 1) {
                 classes="max-h-[56vh] w-auto max-w-full rounded object-contain shadow-sm"
             >
               <template #loading>
-                <span class="text-gray-400">
-                  加载中...
-                </span>
+                <span class="text-gray-400"> 加载中... </span>
               </template>
               <template #error>
-                <span class="text-red-400">
-                  加载失败
-                </span>
+                <span class="text-red-400"> 加载失败 </span>
               </template>
             </LazyImage>
             <video
@@ -124,27 +118,14 @@ function switchImage(offset: -1 | 1) {
             >
               当前浏览器不支持该音频播放
             </audio>
-            <span v-else class="text-sm text-gray-500">
-              此文件不支持预览
-            </span>
+            <span v-else class="text-sm text-gray-500"> 此文件不支持预览 </span>
           </div>
         </div>
         <VDescription>
-          <VDescriptionItem
-              label="文件名称"
-              :content="currentImage?.name"
-          />
-          <VDescriptionItem
-              label="文件类型"
-              :content="currentImage?.mediaType"
-          />
-          <VDescriptionItem
-            label="文件大小"
-            :content="prettyBytes(currentImage?.size || 0)"
-          />
-          <VDescriptionItem
-            label="链接"
-          >
+          <VDescriptionItem label="文件名称" :content="currentImage?.name"/>
+          <VDescriptionItem label="文件类型" :content="currentImage?.mediaType"/>
+          <VDescriptionItem label="文件大小" :content="prettyBytes(currentImage?.size || 0)"/>
+          <VDescriptionItem label="链接">
             <ImagePermalinkList :image="currentImage"/>
           </VDescriptionItem>
         </VDescription>
@@ -152,9 +133,7 @@ function switchImage(offset: -1 | 1) {
     </div>
     <template #footer>
       <VSpace>
-        <VButton type="default" @click="emit('close')">
-          关闭
-        </VButton>
+        <VButton type="default" @click="emit('close')"> 关闭</VButton>
         <slot name="footer" />
       </VSpace>
     </template>

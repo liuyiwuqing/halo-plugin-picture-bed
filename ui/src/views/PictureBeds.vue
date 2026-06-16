@@ -33,7 +33,9 @@ const providerComponentMap: Record<string, Component> = {
   pan123: Pan123SelectorProvider,
 }
 const selectedProviderType = computed(() => pictureBedKey.value.split('_')[0] ?? '')
-const currentProviderComponent = computed(() => providerComponentMap[selectedProviderType.value] ?? null)
+const currentProviderComponent = computed(
+    () => providerComponentMap[selectedProviderType.value] ?? null,
+)
 
 const {data: pictureBedsAvailable} = useQuery<PictureBed[]>({
   queryKey: ['pictureBeds'],
@@ -42,8 +44,8 @@ const {data: pictureBedsAvailable} = useQuery<PictureBed[]>({
     try {
       const { data } = await pictureBedApisClient.pictureBed.pictureBeds()
       const pictureBedsEnabled = (data as PictureBedResponse[])
-          .filter(item => item.enabled)
-          .map(item => ({
+          .filter((item) => item.enabled)
+          .map((item) => ({
             label: item.name,
             value: item.key,
           }))
@@ -67,10 +69,7 @@ const handleAttachmentUpdate = (attachments: AttachmentLike[]) => {
       <MdiPicture360Outline class="mr-2 self-center" />
     </template>
     <template #actions>
-      <FilterDropdown
-        v-model="pictureBedKey"
-        label="图床"
-        :items="pictureBedsAvailable ?? []" />
+      <FilterDropdown v-model="pictureBedKey" label="图床" :items="pictureBedsAvailable ?? []"/>
     </template>
   </VPageHeader>
   <div class="h-full w-full">
@@ -82,24 +81,21 @@ const handleAttachmentUpdate = (attachments: AttachmentLike[]) => {
           :pictureBedKey="pictureBedKey"
           :selected="selectedAttachments"
           :key="pictureBedKey"
-          @update:selected="handleAttachmentUpdate"/>
+          @update:selected="handleAttachmentUpdate"
+      />
       <VEmpty
         v-else
         message="当前图床类型暂未支持管理页面，请检查配置或插件版本"
-        title="暂不支持的图床类型">
+        title="暂不支持的图床类型"
+      >
         <template #actions>
           <VSpace>
-            <VButton :route="{ path: '/plugins/PictureBed?tab=basic' }">
-              检查配置
-            </VButton>
+            <VButton :route="{ path: '/plugins/PictureBed?tab=basic' }"> 检查配置</VButton>
           </VSpace>
         </template>
       </VEmpty>
     </VCard>
-    <VEmpty
-      v-else
-      message="请选择图床"
-      title="当前未选择图床" />
+    <VEmpty v-else message="请选择图床" title="当前未选择图床"/>
   </div>
 </template>
 

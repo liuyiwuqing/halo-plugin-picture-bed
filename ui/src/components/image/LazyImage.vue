@@ -1,41 +1,41 @@
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
+import {onMounted, ref} from 'vue'
 
 const props = withDefaults(
   defineProps<{
-    src: string;
-    alt?: string;
-    classes?: string | string[];
+    src: string
+    alt?: string
+    classes?: string | string[]
   }>(),
   {
-    src: "",
-    alt: "",
-    classes: "",
-  }
-);
+    src: '',
+    alt: '',
+    classes: '',
+  },
+)
 
-const isLoading = ref(false);
-const error = ref(false);
+const isLoading = ref(false)
+const error = ref(false)
 
 const loadImage = async () => {
-  const image = new Image();
-  image.src = props.src;
+  const image = new Image()
+  image.src = props.src
   return new Promise((resolve, reject) => {
-    image.onload = () => resolve(image);
-    image.onerror = (err) => reject(err);
-  });
-};
+    image.onload = () => resolve(image)
+    image.onerror = (err) => reject(err)
+  })
+}
 
 onMounted(async () => {
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    await loadImage();
+    await loadImage()
   } catch (e) {
-    error.value = true;
+    error.value = true
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 </script>
 <template>
   <template v-if="isLoading">

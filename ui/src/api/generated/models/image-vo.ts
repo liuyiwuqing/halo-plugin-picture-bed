@@ -13,7 +13,6 @@
  * Do not edit the class manually.
  */
 
-
 /**
  *
  * @export
@@ -25,42 +24,41 @@ export interface ImageVO {
      * @type {number}
      * @memberof ImageVO
      */
-    'height'?: number;
+    height?: number
     /**
      *
      * @type {string}
      * @memberof ImageVO
      */
-    'id'?: string;
+    id?: string
     /**
      *
      * @type {string}
      * @memberof ImageVO
      */
-    'mediaType'?: string;
+    mediaType?: string
     /**
      *
      * @type {string}
      * @memberof ImageVO
      */
-    'name'?: string;
+    name?: string
     /**
      *
      * @type {number}
      * @memberof ImageVO
      */
-    'size'?: number;
+    size?: number
     /**
      *
      * @type {string}
      * @memberof ImageVO
      */
-    'url'?: string;
+    url?: string
     /**
      *
      * @type {number}
      * @memberof ImageVO
      */
-    'width'?: number;
+    width?: number
 }
-

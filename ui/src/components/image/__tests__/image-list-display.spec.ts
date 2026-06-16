@@ -1,8 +1,6 @@
 import {describe, expect, it} from 'vitest'
 import {
     getImageListDisplayClasses,
-    getImageListItemClasses,
-    getMasonryTileVariant,
     IMAGE_LIST_DISPLAY_MODE_STORAGE_KEY,
     isImageListDisplayMode,
 } from '../image-list-display'
@@ -17,34 +15,21 @@ describe('image list display mode', () => {
         expect(classes.image).toContain('object-cover')
     })
 
-    it('uses a dense mosaic grid for Masonry Mode', () => {
+    it('uses natural-height columns for Masonry Mode', () => {
         const classes = getImageListDisplayClasses('masonry')
 
         expect(classes.container).toContain('picture-bed-image-list--masonry')
-        expect(classes.container).toContain('picture-bed-image-list--comfortable-preview')
-        expect(classes.container).not.toContain('columns-2')
+        expect(classes.container).not.toContain('picture-bed-image-list--comfortable-preview')
+        expect(classes.container).not.toContain('grid')
+        expect(classes.item).toContain('bg-transparent')
         expect(classes.frame).toContain('picture-bed-image-list__frame--masonry')
         expect(classes.card).toContain('picture-bed-image-list__card--masonry')
+        expect(classes.card).not.toContain('h-full')
         expect(classes.image).toContain('object-contain')
+        expect(classes.image).toContain('h-auto')
         expect(classes.image).not.toContain('object-cover')
-    })
-
-    it('sizes masonry tiles from image proportions', () => {
-        expect(getMasonryTileVariant({width: 3840, height: 2160}, 0)).toBe('large')
-        expect(getMasonryTileVariant({width: 1800, height: 700}, 1)).toBe('wide')
-        expect(getMasonryTileVariant({width: 700, height: 1800}, 1)).toBe('tall')
-        expect(getMasonryTileVariant({width: 1400, height: 1200}, 7)).toBe('large')
-        expect(getMasonryTileVariant({width: 1200, height: 1000}, 1)).toBe('normal')
-    })
-
-    it('uses a stable fallback rhythm when image dimensions are missing', () => {
-        expect(getMasonryTileVariant({}, 0)).toBe('large')
-        expect(getMasonryTileVariant({}, 4)).toBe('wide')
-        expect(getMasonryTileVariant({}, 7)).toBe('tall')
-        expect(getImageListItemClasses('masonry', {}, 0)).toBe(
-            'picture-bed-image-list__card--large',
-        )
-        expect(getImageListItemClasses('grid', {}, 0)).toBe('')
+        expect(classes.caption).toContain('absolute')
+        expect(classes.caption).toContain('group-hover:opacity-100')
     })
 
     it('accepts only supported display modes', () => {

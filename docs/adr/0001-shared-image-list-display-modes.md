@@ -1,9 +1,9 @@
 # Shared Image List display modes
 
 The console Image List supports both Grid Mode and Masonry Mode through a shared frontend display component instead of
-duplicating layout logic in each Picture Bed provider. Masonry Mode is implemented as a CSS Grid dense mosaic layout
-rather than CSS columns or a third-party masonry library, so the plugin keeps its dependency surface small while
-presenting mixed wide, tall, large, and normal image tiles without large visual gaps.
+duplicating layout logic in each Picture Bed provider. Masonry Mode is implemented with CSS columns rather than fixed
+height grid tiles or a third-party masonry library, so images keep their natural proportions and stack tightly without
+large wrapper whitespace.
 
 **Considered Options**
 
@@ -18,6 +18,6 @@ presenting mixed wide, tall, large, and normal image tiles without large visual 
 
 All Picture Bed providers should pass their images, selection state, disabled state, and detail handlers into the shared
 Image List display component. Future Display Modes should be added there first unless a provider has a genuinely
-provider-specific browsing model. Masonry Mode uses `object-contain` so thumbnails preserve complete image content
-inside mosaic tiles. The shared component owns the visual rhythm so providers do not need to tune tile spans
-independently.
+provider-specific browsing model. Masonry Mode uses `object-contain` with natural image height so thumbnails preserve
+complete image content, avoid crop-heavy previews, and do not sit inside large padded cards. The shared component owns
+the column rhythm so providers do not need to tune layout independently.

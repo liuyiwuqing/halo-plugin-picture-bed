@@ -5,7 +5,7 @@ import type {ImageVO} from '@/api/generated'
 import {isImage} from '@/utils/image'
 import AttachmentFileTypeIcon from '@/components/icon/AttachmentFileTypeIcon.vue'
 import LazyImage from '@/components/image/LazyImage.vue'
-import {getImageListDisplayClasses, getImageListItemClasses, type ImageListDisplayMode,} from './image-list-display'
+import {getImageListDisplayClasses, type ImageListDisplayMode} from './image-list-display'
 
 const props = withDefaults(
     defineProps<{
@@ -26,11 +26,15 @@ const emit = defineEmits<{
 }>()
 
 const displayClasses = computed(() => getImageListDisplayClasses(props.mode))
+const cardBodyClass = computed(() => [
+  '!p-0',
+  'picture-bed-image-list__card-body',
+  ...(props.mode === 'masonry' ? ['picture-bed-image-list__card-body--masonry'] : []),
+])
 
-const cardClass = (image: ImageVO, index: number) => [
-  'hover:shadow',
+const cardClass = (image: ImageVO) => [
+  props.mode === 'grid' ? 'hover:shadow' : '',
   displayClasses.value.card,
-  getImageListItemClasses(props.mode, image, index),
   {
     'ring-1 ring-primary': props.isChecked(image),
     'pointer-events-none !cursor-not-allowed opacity-50': props.isDisabled(image),
@@ -43,12 +47,12 @@ const cardClass = (image: ImageVO, index: number) => [
     <VCard
         v-for="(image, index) in images"
         :key="image.id || image.url || index"
-        :body-class="['!p-0', 'picture-bed-image-list__card-body']"
-        :class="cardClass(image, index)"
+        :body-class="cardBodyClass"
+        :class="cardClass(image)"
         role="listitem"
         @click.stop="emit('select', image)"
     >
-      <div class="group relative flex h-full flex-col bg-white">
+      <div :class="displayClasses.item">
         <div :class="displayClasses.frame">
           <LazyImage
               v-if="isImage(image.mediaType)"
@@ -70,9 +74,7 @@ const cardClass = (image: ImageVO, index: number) => [
           </LazyImage>
           <AttachmentFileTypeIcon v-else :file-name="image.name"/>
         </div>
-        <p
-            class="pointer-events-none block truncate px-2 py-1 text-center text-xs font-medium text-gray-700"
-        >
+        <p :class="displayClasses.caption">
           {{ image.name }}
         </p>
 
@@ -96,11 +98,8 @@ const cardClass = (image: ImageVO, index: number) => [
 
 <style scoped>
 .picture-bed-image-list--masonry {
-  display: grid;
-  grid-auto-flow: dense;
-  grid-auto-rows: 10rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  column-count: 2;
+  column-gap: 0.375rem;
 }
 
 :deep(.picture-bed-image-list__card-body) {
@@ -108,47 +107,52 @@ const cardClass = (image: ImageVO, index: number) => [
   min-height: 0;
 }
 
-.picture-bed-image-list__card--normal {
-  grid-column: span 1 / span 1;
-  grid-row: span 1 / span 1;
+.picture-bed-image-list__card--masonry {
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 0.375rem;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  box-shadow: none;
+  vertical-align: top;
 }
 
-.picture-bed-image-list__card--wide {
-  grid-column: span 2 / span 2;
-  grid-row: span 1 / span 1;
+.picture-bed-image-list__card--masonry:hover {
+  box-shadow: none;
 }
 
-.picture-bed-image-list__card--tall {
-  grid-column: span 1 / span 1;
-  grid-row: span 2 / span 2;
+.picture-bed-image-list__card--masonry :deep(.picture-bed-image-list__card-body--masonry) {
+  height: auto;
 }
 
-.picture-bed-image-list__card--large {
-  grid-column: span 2 / span 2;
-  grid-row: span 2 / span 2;
+.picture-bed-image-list__frame--masonry {
+  line-height: 0;
 }
 
 @media (min-width: 640px) {
   .picture-bed-image-list--masonry {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-count: 2;
   }
 }
 
 @media (min-width: 768px) {
   .picture-bed-image-list--masonry {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1280px) {
-  .picture-bed-image-list--masonry {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-count: 3;
   }
 }
 
 @media (min-width: 1536px) {
   .picture-bed-image-list--masonry {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    column-count: 4;
+  }
+}
+
+@media (min-width: 1920px) {
+  .picture-bed-image-list--masonry {
+    column-count: 5;
   }
 }
 </style>
