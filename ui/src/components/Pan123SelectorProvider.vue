@@ -4,25 +4,23 @@ import {
   IconCheckboxCircle,
   IconCheckboxFill,
   IconDeleteBin,
-  IconEye,
   Toast,
   VButton,
-  VCard,
   VEmpty,
   VLoading,
-  VSpace
-} from "@halo-dev/components"
-import {computed, onMounted, ref, watch} from "vue"
-import {isImage} from "@/utils/image"
-import type {AttachmentLike} from "@halo-dev/ui-shared"
-import {matchMediaTypes} from "@/utils/media-type"
-import LazyImage from "@/components/image/LazyImage.vue"
-import {useQuery} from "@tanstack/vue-query"
-import ImageDetailModal from "@/components/image/ImageDetailModal.vue"
-import ImageUploadModal from "@/components/image/ImageUploadModal.vue"
-import {pictureBedApisClient} from "@/api"
-import AttachmentFileTypeIcon from "@/components/icon/AttachmentFileTypeIcon.vue"
-import type {AlbumVO, ImageVO} from "@/api/generated"
+  VSpace,
+} from '@halo-dev/components'
+import {computed, onMounted, ref, watch} from 'vue'
+import type {AttachmentLike} from '@halo-dev/ui-shared'
+import {matchMediaTypes} from '@/utils/media-type'
+import {useQuery} from '@tanstack/vue-query'
+import ImageDetailModal from '@/components/image/ImageDetailModal.vue'
+import ImageUploadModal from '@/components/image/ImageUploadModal.vue'
+import {pictureBedApisClient} from '@/api'
+import type {AlbumVO, ImageVO} from '@/api/generated'
+import ImageListDisplay from '@/components/image/ImageListDisplay.vue'
+import ImageListDisplayModeSwitch from '@/components/image/ImageListDisplayModeSwitch.vue'
+import {useImageListDisplayMode} from '@/components/image/use-image-list-display-mode'
 
 const props = withDefaults(
   defineProps<{
@@ -34,16 +32,16 @@ const props = withDefaults(
   }>(),
   {
     selected: () => [],
-    accepts: () => ["*/*"],
+    accepts: () => ['*/*'],
     min: undefined,
     max: undefined,
-    pictureBedKey: "",
-  }
+    pictureBedKey: '',
+  },
 )
 
 const emit = defineEmits<{
-  (event: "update:selected", attachments: AttachmentLike[]): void;
-  (event: "change-provider", providerId: string): void
+  (event: 'update:selected', attachments: AttachmentLike[]): void
+  (event: 'change-provider', providerId: string): void
 }>()
 
 const selectedImages = ref<Set<ImageVO>>(new Set())
@@ -55,17 +53,20 @@ const uploadVisible = ref(false)
 const detailVisible = ref(false)
 const page = ref(1)
 const size = ref(20)
-const keyword = ref("")
+const keyword = ref('')
 const albumListIsLoading = ref(false)
 const isLoading = ref(false)
-const lastFileId = ref("")
-const picturebedType = computed(() => props.pictureBedKey.split("_")[0])
-const pictureBedId = computed(() => props.pictureBedKey.split("_")[1])
-const albumList = ref<AlbumVO[]>([{
-  id: "",
-  name: "全部",
-  description: "全部图片",
-}])
+const lastFileId = ref('')
+const {displayMode} = useImageListDisplayMode()
+const picturebedType = computed(() => props.pictureBedKey.split('_')[0])
+const pictureBedId = computed(() => props.pictureBedKey.split('_')[1])
+const albumList = ref<AlbumVO[]>([
+  {
+    id: '',
+    name: '全部',
+    description: '全部图片',
+  },
+])
 
 const { data: imageList, refetch } = useQuery({
   queryKey: [`imageList_${picturebedType.value}`, selectedAlbum, page, size, keyword],
@@ -84,7 +85,7 @@ const { data: imageList, refetch } = useQuery({
     if (data.list) {
       data.list.forEach((image: ImageVO) => {
         if (image.mediaType == 'folder') {
-          if (albumList.value.findIndex(album => album.id === image.id) === -1) {
+          if (albumList.value.findIndex((album) => album.id === image.id) === -1) {
             if (image.name === 'lastFileId') {
               lastFileId.value = image.id as string
             } else {
@@ -114,7 +115,7 @@ function loadMore() {
 const handleSelectAlbum = (album: AlbumVO) => {
   selectedAlbum.value = album
   selectedImages.value.clear()
-  lastFileId.value = ""
+  lastFileId.value = ''
   keyword.value = lastFileId.value
   allImageList.value = []
   page.value = 1
@@ -123,7 +124,7 @@ const handleSelectAlbum = (album: AlbumVO) => {
 const isChecked = (image: ImageVO) => selectedImages.value.has(image)
 
 const isDisabled = (image: ImageVO) => {
-  const isMatchMediaType = matchMediaTypes(image.mediaType || "*/*", props.accepts)
+  const isMatchMediaType = matchMediaTypes(image.mediaType || '*/*', props.accepts)
   return props.max !== undefined && props.max <= selectedImages.value.size && !isChecked(image)
     ? true
     : !isMatchMediaType
@@ -132,25 +133,29 @@ const isDisabled = (image: ImageVO) => {
 const deleteSelected = async () => {
   const selected = Array.from(selectedImages.value)
   Dialog.warning({
-    title: "确认删除",
+    title: '确认删除',
     description: `确定要删除选中的 ${selected.length} 张图片吗?此操作不可恢复。`,
-    confirmText: "确定",
-    cancelText: "取消",
+    confirmText: '确定',
+    cancelText: '取消',
     onConfirm: async () => {
-      const deleteResults = await Promise.allSettled(selected.map((image) =>
-        pictureBedApisClient.pictureBed.deleteImage({
-          pictureBedId: pictureBedId.value,
-          type: picturebedType.value,
-          imageId: image.id,
-        }).then(({data}) => ({
-          imageId: image.id as string,
-          success: Boolean(data),
-        }))
-      ))
+      const deleteResults = await Promise.allSettled(
+          selected.map((image) =>
+              pictureBedApisClient.pictureBed
+                  .deleteImage({
+                    pictureBedId: pictureBedId.value,
+                    type: picturebedType.value,
+                    imageId: image.id,
+                  })
+                  .then(({data}) => ({
+                    imageId: image.id as string,
+                    success: Boolean(data),
+                  })),
+          ),
+      )
       let failedCount = 0
 
       deleteResults.forEach((result) => {
-        if (result.status === "fulfilled" && result.value.success) {
+        if (result.status === 'fulfilled' && result.value.success) {
           deletedImageIds.value.add(result.value.imageId)
           return
         }
@@ -158,7 +163,7 @@ const deleteSelected = async () => {
       })
       selectedImages.value.clear()
       await refetch()
-      emit("update:selected", [])
+      emit('update:selected', [])
 
       if (failedCount === 0) {
         Toast.success(`已删除 ${selected.length} 张图片`)
@@ -180,18 +185,18 @@ const handleSelect = (image: ImageVO) => {
 const handleSelectAll = () => {
   if (!imageList.value) return
 
-  const allSelected = imageList.value.every(image => selectedImages.value.has(image))
+  const allSelected = imageList.value.every((image) => selectedImages.value.has(image))
 
   if (allSelected) {
     // 如果全部已选中，则取消全选
-    imageList.value.forEach(image => {
+    imageList.value.forEach((image) => {
       if (selectedImages.value.has(image)) {
         selectedImages.value.delete(image)
       }
     })
   } else {
     // 否则全选所有可选的图片
-    imageList.value.forEach(image => {
+    imageList.value.forEach((image) => {
       if (!isDisabled(image)) {
         selectedImages.value.add(image)
       }
@@ -200,28 +205,36 @@ const handleSelectAll = () => {
 }
 const isAllSelected = computed(() => {
   if (!imageList.value || imageList.value.length === 0) return false
-  return imageList.value.every(image => selectedImages.value.has(image))
+  return imageList.value.every((image) => selectedImages.value.has(image))
 })
-
 
 const handleOpenDetail = (image: ImageVO) => {
   selectedImage.value = image
   detailVisible.value = true
 }
 
-watch(selectedImages, () => {
-  const images = Array.from(selectedImages.value).map((image) => ({
-    spec: {
-      displayName: image.name,
-      mediaType: image.mediaType,
-      size: image.size,
+const handleUploadClose = () => {
+  uploadVisible.value = false
+  refetch()
+}
+
+watch(
+    selectedImages,
+    () => {
+      const images = Array.from(selectedImages.value).map((image) => ({
+        spec: {
+          displayName: image.name,
+          mediaType: image.mediaType,
+          size: image.size,
+        },
+        status: {
+          permalink: image.url,
+        },
+      }))
+      emit('update:selected', images as AttachmentLike[])
     },
-    status: {
-      permalink: image.url,
-    },
-  }))
-  emit("update:selected", images as AttachmentLike[])
-}, { deep: true })
+    {deep: true},
+)
 
 watch(lastFileId, () => {
   selectedImages.value.clear()
@@ -240,8 +253,7 @@ onMounted(() => {
     <SearchInput placeholder="回车搜索" v-model="keyword" />
   </div> -->
 
-  <div
-    class="mb-5 grid grid-cols-2 gap-x-2 gap-y-3 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
+  <div class="mb-5 grid grid-cols-2 gap-x-2 gap-y-3 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
     <VLoading v-if="albumListIsLoading" />
     <div
       v-else
@@ -251,16 +263,18 @@ onMounted(() => {
         '!bg-gray-100 shadow-sm': album.id === selectedAlbum?.id,
       }"
       class="inline-flex h-full w-full items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50 hover:shadow-sm"
-      @click="handleSelectAlbum(album)">
+      @click="handleSelectAlbum(album)"
+    >
       <div class="flex flex-1 items-center truncate">
         <span class="inline-flex w-full flex-1 gap-x-2 break-all text-left">
           {{ album.name }}
         </span>
         <div class="flex-none" v-show="album.id === selectedAlbum?.id">
           <svg viewBox="0 0 24 24" width="1.2em" height="1.2em" class="text-primary">
-            <path fill="currentColor"
-              d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10Zm0-2a8 8 0 1 0 0-16a8 8 0 0 0 0 16Zm-.997-4L6.76 11.757l1.414-1.414l2.829 2.829l5.657-5.657l1.414 1.414L11.003 16Z">
-            </path>
+            <path
+                fill="currentColor"
+                d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10s-4.477 10-10 10Zm0-2a8 8 0 1 0 0-16a8 8 0 0 0 0 16Zm-.997-4L6.76 11.757l1.414-1.414l2.829 2.829l5.657-5.657l1.414 1.414L11.003 16Z"
+            ></path>
           </svg>
         </div>
       </div>
@@ -279,6 +293,7 @@ onMounted(() => {
       </template>
       删除
     </VButton>
+    <ImageListDisplayModeSwitch v-model="displayMode"/>
   </VSpace>
 
   <!-- <VSpace>
@@ -306,7 +321,8 @@ onMounted(() => {
   <VEmpty
     v-else-if="imageList?.length === 0"
     message="当前分组没有附件，你可以尝试刷新或者上传附件"
-    title="当前分组没有附件">
+    title="当前分组没有附件"
+  >
     <template #actions>
       <VSpace>
         <VButton @click="refetch">刷新</VButton>
@@ -314,63 +330,18 @@ onMounted(() => {
     </template>
   </VEmpty>
 
-  <div
+  <ImageListDisplay
     v-else
-    class="mt-2 grid grid-cols-3 gap-x-2 gap-y-3 sm:grid-cols-3 md:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10"
-    role="list">
-    <VCard
-      v-for="(image, index) in imageList"
-      :key="index"
-      :body-class="['!p-0']"
-      :class="{
-        'ring-1 ring-primary': isChecked(image),
-        'pointer-events-none !cursor-not-allowed opacity-50': isDisabled(image),
-      }"
-      class="hover:shadow"
-      @click.stop="handleSelect(image)">
-      <div class="group relative bg-white">
-        <div class="aspect-h-8 aspect-w-10 block h-full w-full cursor-pointer overflow-hidden bg-gray-100">
-          <LazyImage
-            v-if="isImage(image.mediaType)"
-            :key="image.id"
-            :alt="image.name || ''"
-            :src="image.url || ''"
-            classes="pointer-events-none object-cover group-hover:opacity-75 transform-gpu">
-            <template #loading>
-              <div class="flex h-full items-center justify-center object-cover">
-                <span class="text-xs text-gray-400">加载中...</span>
-              </div>
-            </template>
-            <template #error>
-              <div class="flex h-full items-center justify-center object-cover">
-                <span class="text-xs text-red-400">加载异常</span>
-              </div>
-            </template>
-          </LazyImage>
-          <AttachmentFileTypeIcon v-else :file-name="image.name" />
-        </div>
-        <p class="pointer-events-none block truncate px-2 py-1 text-center text-xs font-medium text-gray-700">
-          {{ image.name }}
-        </p>
-
-        <div
-          :class="{ '!flex': selectedImages.has(image) }"
-          class="absolute left-0 top-0 hidden h-1/3 w-full justify-end bg-gradient-to-b from-gray-300 to-transparent ease-in-out group-hover:flex">
-          <IconEye
-            class="mr-1 mt-1 hidden h-6 w-6 cursor-pointer text-white transition-all hover:text-primary group-hover:block"
-            @click.stop="handleOpenDetail(image)" />
-          <IconCheckboxFill
-            :class="{ '!text-primary': selectedImages.has(image) }"
-            class="mr-1 mt-1 h-6 w-6 cursor-pointer text-white transition-all hover:text-primary" />
-        </div>
-      </div>
-    </VCard>
-  </div>
+    :images="imageList || []"
+    :mode="displayMode"
+    :is-checked="isChecked"
+    :is-disabled="isDisabled"
+    @select="handleSelect"
+    @open-detail="handleOpenDetail"
+  />
 
   <div class="mt-4" v-if="lastFileId != '-1'">
-    <VButton @click="loadMore">
-      查看更多
-    </VButton>
+    <VButton @click="loadMore"> 查看更多</VButton>
   </div>
 
   <ImageDetailModal
@@ -378,9 +349,13 @@ onMounted(() => {
     v-model:image-selected="selectedImage"
     :mount-to-body="true"
     :images="imageList || []"
-    @close="detailVisible = false">
+    @close="detailVisible = false"
+  >
     <template #actions>
-      <span v-if="selectedImage && selectedImages.has(selectedImage)" @click="handleSelect(selectedImage)">
+      <span
+          v-if="selectedImage && selectedImages.has(selectedImage)"
+          @click="handleSelect(selectedImage)"
+      >
         <IconCheckboxFill />
       </span>
       <span v-else @click="selectedImage && handleSelect(selectedImage)">
@@ -395,5 +370,6 @@ onMounted(() => {
     :picBedId="pictureBedId"
     :albumId="selectedAlbum?.id"
     :key="selectedAlbum?.id"
-    @close="uploadVisible = false; refetch();" />
+    @close="handleUploadClose"
+  />
 </template>
