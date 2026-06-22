@@ -1,176 +1,156 @@
-# 图床插件
+# Halo 图床插件
 
-## 交流群
+图床插件用于把 Halo 控制台和附件选择器接入第三方图床服务。站点管理员可以配置多个图床实例，按实例浏览、上传、选择、预览和删除图片。
 
-[点击链接加入群聊【halo博客-lywq插件】](https://qm.qq.com/q/wuC7NZr0sw)
+![插件 Logo](src/main/resources/logo.png)
 
-<img src="https://github.com/user-attachments/assets/bf162401-07fd-49ec-b50f-5218c9510937" style="height: 400px !important; width: auto; object-fit: contain;" />
+## 当前状态
 
-## 介绍
+| 项目    | 说明                                                              |
+|-------|-----------------------------------------------------------------|
+| 插件版本  | `1.3.3`                                                         |
+| 插件 ID | `PictureBed`                                                    |
+| 运行要求  | Halo `>= 2.25.0`                                                |
+| 后端基线  | Java 21、Halo Plugin Platform `2.24.0`                           |
+| 前端基线  | Vue 3、Rsbuild、`@halo-dev/components`、`@halo-dev/ui-shared`      |
+| 许可证   | GPL-3.0                                                         |
+| 仓库    | <https://github.com/liuyiwuqing/halo-plugin-picture-bed>        |
+| 问题反馈  | <https://github.com/liuyiwuqing/halo-plugin-picture-bed/issues> |
 
-对接多种图床服务，实现图片上传、删除等功能。
+## 支持的图床
 
-![图床插件演示1.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示1.png)
-![图床插件演示2.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示2.png)
-![图床插件演示3.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示3.png)
-![图床插件演示5.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示5.png)
-![图床插件演示4.png](https://blog.muyin.site/upload/lywqPlugins/图床插件演示4.png)
+| 图床类型          | 配置值      | 浏览 | 上传       | 删除 | 分组能力 | 备注                        |
+|---------------|----------|----|----------|----|------|---------------------------|
+| 兰空图床 Lsky Pro | `lsky`   | 支持 | 支持       | 支持 | 相册   | 支持关键字搜索和可选储存策略 ID         |
+| SM.MS         | `smms`   | 支持 | 支持       | 支持 | 无    | 使用上传历史列表                  |
+| ImgTP         | `imgtp`  | 支持 | 支持       | 支持 | 无    | 使用 ImgTP 图片列表接口           |
+| 123 盘图床       | `pan123` | 支持 | 当前管理页未开放 | 支持 | 文件夹  | 使用“查看更多”加载后续批次，不支持常规关键字搜索 |
 
-## 更新日志
+## 核心能力
 
-### V1.3.0版本
+- 在 Halo 控制台 `工具 -> 图床管理` 中统一管理已启用的图床实例。
+- 支持同一种图床配置多个实例，例如“文章图床”“封面图床”“临时图床”。
+- 支持图片网格和瀑布流两种展示模式。
+- 支持图片详情预览、链接查看、单选、多选、全选和批量删除。
+- 支持在 Halo 附件选择器中注册已启用的图床入口，文章编辑器、主题设置和插件表单可以直接选择图床资源。
+- 通过 `plugin:picturebed:manage` 控制 Console 菜单和附件选择器入口。
 
-    1. 新增全选功能
-    2. 新增删除确认功能
+## 能力边界
 
-### V1.2.4版本
+- 插件不把第三方图床图片复制为 Halo 本地附件，只返回可访问的外部图片链接。
+- 插件不提供统一 CDN、反向代理、图片处理、缩略图生成或缓存刷新能力。
+- 删除操作会调用第三方图床删除接口，成功后通常不可恢复。
+- 123 盘当前界面侧重浏览、选择和删除，后台服务里保留上传调用，但 Console 页面没有开放上传按钮。
+- 不同图床的 API 能力不一致，搜索、相册、分页和文件夹展示不会强行抹平成完全一样。
 
-refactor(picturebed): 重构图床插件代码并优化插件兼容性
+## 安装和配置
 
-    1. 更新 Halo 平台依赖版本至 2.20.11
-    2. 缩减安装包大小
-    3. 移除不必要的第三方库依赖
-    4. 更新 UI 组件，移除调试代码
-    5. 优化插件兼容性
+1. 在 Halo 控制台进入 `插件`。
+2. 安装并启用 `图床插件`。
+3. 进入插件设置页，在 `基本设置 -> 图床接口` 中新增至少一个图床实例。
+4. 填写图床类型、图床名称、API 地址、认证信息，并打开 `是否启用`。
+5. 保存设置后刷新控制台，进入 `工具 -> 图床管理`。
 
-### V1.2.3版本
+详细配置和排障见 [用户使用指南](docs/user-guide.md)。
 
-    1. 优化插件配置加载逻辑，使用ReactiveSettingFetcher获取配置
-    2. 更新插件和依赖版本，删除无用的注解和工具类，重构图片上传相关逻辑，优化异常处理，提升代码可读性和可维护性。
+## 权限
 
-### V1.2.2版本
+插件声明了一个后台权限模板：
 
-> ⚠️ 注意：此版本Halo 版本要求>=2.20.0
+| 权限                         | 用途                                |
+|----------------------------|-----------------------------------|
+| `plugin:picturebed:manage` | 展示 `图床管理` 菜单、访问插件接口、在附件选择器中展示图床入口 |
 
-    1. 新增权限功能；#7
-    2. 支持Halo2.20版本；
+如果非管理员看不到菜单或附件选择器入口，请先在 Halo 角色权限中分配“图床管理操作”权限。
 
-### V1.2.1版本
+## 接口概览
 
-> ⚠️ 注意：此版本Halo 版本要求>=2.19.0
-> ⚠️ ⚠️ ⚠️ 更新此版本之前务必先重置插件！！！
+插件后端暴露的 API 分组为：
 
-    1. 兰空图床支持配置存储策略；#3
-    2. 单一类型图床支持多个图床接口配置，支持自定义图床名称；#5
-    3. 使用插件的开发者工具生成 API Client，并重构插件的请求逻辑；
-    4. 更新依赖库版本；
-
-### V1.1.0版本
-
-> 注意：此版本Halo 版本要求>=2.16.0
-
-    1. 修复删除图片时，缓存导致的图片显示问题；
-    2. 修复图库无法使用图床附件的问题；
-    3. 更新依赖库版本；
-
-### V1.0.2版本
-
-> 注意：此版本Halo 版本要求>=2.16.0
-
-    1. 修改Halo 版本要求
-
-### V1.0.1版本
-
-> 注意：此版本Halo 版本要求>=2.16.0
-
-    1. 优化附件选项卡，实现图床选项动态加载
-    2. 优化上传结果友好提示
-    3. 更新依赖库
-
-### V1.0.0版本
-
-    1. 对接兰空图床
-    2. 对接SM.MS图床
-    3. 支持图片上传、批量上传
-    4. 支持图片删除、批量删除
-
-## 插件使用文档
-
-优先阅读仓库内说明：[docs/user-guide.md](docs/user-guide.md)
-
-在线文档：<https://blog.muyin.site/docs>
-
-## 精选插件
-
-|                              名称                               |                                                     图片                                                     |                        功能                         |                       下载地址                        |
-|:-------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------:|:-------------------------------------------------:|:-------------------------------------------------:|
-| [【Halo程序】产品管理插件](https://auth.muyin.site/docs/PluginProduct)  | <img src="https://auth.muyin.site/upload/productLogo/PluginProduct.png" alt="img" style="width:100px;" />  | 该插件用于管理产品信息，包括产品列表、产品详情、产品版本、产品授权、产品订单，同时提供产品购买等。 | [访问](https://auth.muyin.site/docs/PluginProduct)  |
-| [【Halo程序】授权管理插件](https://auth.muyin.site/docs/LywqPluginAuth) | <img src="https://auth.muyin.site/upload/productLogo/LywqPluginAuth.png" alt="img" style="width:100px;" /> |        对自定义插件提供统一管理，发布插件、授权插件、用户自助申请授权等功能。        | [访问](https://auth.muyin.site/docs/LywqPluginAuth) |
-|  [【Halo程序】支付插件](https://auth.muyin.site/docs/PluginPayment)   | <img src="https://auth.muyin.site/upload/productLogo/PluginPayment.png" alt="img" style="width:100px;" />  |                      提供支付能力。                      | [访问](https://auth.muyin.site/docs/PluginPayment)  |
-|    [Tools工具箱插件](https://auth.muyin.site/docs/PluginTools)     |  <img src="https://auth.muyin.site/upload/productLogo/PluginTools.png" alt="img" style="width:100px;" />   |        提供微信公众号对接，seo优化，文章定时发布，文章验证码等扩展功能。         |  [访问](https://auth.muyin.site/docs/PluginTools)   |
-| [【Halo程序】友链自助提交插件](https://auth.muyin.site/docs/LinksSubmit)  |  <img src="https://auth.muyin.site/upload/productLogo/LinksSubmit.png" alt="img" style="width:100px;" />   |             访问者可以自助提交友链，并在后台管理页面进行审核。             |  [访问](https://auth.muyin.site/docs/LinksSubmit)   |
-|    [【Halo程序】图床插件](https://blog.muyin.site/docs/pictureBed)    |      <img src="https://blog.muyin.site/upload/lywqPlugins/logo.png" alt="img" style="width:100px;" />      |              对接多种图床服务，实现图片上传、删除等功能。               |   [访问](https://blog.muyin.site/docs/pictureBed)   |
-
-## 开发环境
-
-插件开发的详细文档请查阅：<https://docs.halo.run/developer-guide/plugin/introduction>
-
-所需环境：
-
-1. Java 21
-2. Node 18
-3. pnpm 8
-4. Docker (可选)
-
-克隆项目：
-
-```bash
-git clone git@github.com:halo-sigs/plugin-picture-bed.git
-
-# 或者当你 fork 之后
-
-git clone git@github.com:{your_github_id}/plugin-picture-bed.git
+```text
+/apis/picturebed.muyin.site/v1alpha1
 ```
 
-```bash
-cd path/to/plugin-picture-bed
+当前接口：
+
+| 接口             | 方法     | 说明                         |
+|----------------|--------|----------------------------|
+| `/pictureBeds` | `GET`  | 返回插件设置中配置的图床实例             |
+| `/albums`      | `GET`  | 返回当前图床的相册或分组，只有部分图床有数据     |
+| `/images`      | `GET`  | 返回当前图床的图片列表                |
+| `/uploadImage` | `POST` | 上传图片，`multipart/form-data` |
+| `/deleteImage` | `GET`  | 删除指定图片                     |
+
+前端客户端由 Halo 插件开发工具根据 OpenAPI 生成，封装入口在 `ui/src/api/index.ts`。
+
+## 项目结构
+
+```text
+.
+├── src/main/java/site/muyin/picturebed
+│   ├── PictureBedEndpoint.java      # 插件自定义 API
+│   ├── PictureBedPlugin.java        # 插件生命周期入口
+│   ├── config/                      # 插件设置映射
+│   ├── query/                       # 查询参数模型
+│   ├── service/                     # 图床服务接口与聚合服务
+│   ├── service/Impl/                # 各图床服务实现
+│   └── vo/                          # Console 和附件选择器使用的返回模型
+├── src/main/resources
+│   ├── plugin.yaml                  # 插件元数据
+│   └── extensions/                  # 设置项和权限模板
+├── ui/src
+│   ├── index.ts                     # Console 路由和附件选择器扩展点
+│   ├── views/PictureBeds.vue        # 图床管理页
+│   ├── components/                  # 图床 Provider 和共享图片组件
+│   └── api/                         # OpenAPI 生成客户端封装
+├── docs/user-guide.md               # 用户使用指南
+└── CONTEXT.md                       # 项目领域和架构上下文
 ```
 
-### 运行方式 1（推荐）
+## 本地开发
 
-> 此方式需要本地安装 Docker
+准备环境：
+
+- JDK 21
+- Node.js 20 或更高版本
+- pnpm `10.12.4`
+- Docker，可选，用于 `haloServer`
+
+安装前端依赖：
 
 ```bash
-# macOS / Linux
 ./gradlew pnpmInstall
-
-# Windows
-./gradlew.bat pnpmInstall
 ```
 
+启动 Halo 插件开发环境：
+
 ```bash
-# macOS / Linux
 ./gradlew haloServer
-
-# Windows
-./gradlew.bat haloServer
 ```
 
-执行此命令后，会自动创建一个 Halo 的 Docker
-容器并加载当前的插件，更多文档可查阅：<https://docs.halo.run/developer-guide/plugin/basics/devtools>
-
-### 运行方式 2
-
-> 此方式需要使用源码运行 Halo
-
-编译插件：
+构建插件包：
 
 ```bash
-# macOS / Linux
 ./gradlew build
-
-# Windows
-./gradlew.bat build
 ```
 
-修改 Halo 配置文件：
+运行前端单元测试：
 
-```yaml
-halo:
-  plugin:
-    runtime-mode: development
-    fixedPluginPath:
-      - "/path/to/plugin-picture-bed"
+```bash
+./gradlew :ui:pnpmCheck
 ```
 
-最后重启 Halo 项目即可。
+只检查或构建前端：
+
+```bash
+pnpm --dir ui type-check
+pnpm --dir ui test:unit
+pnpm --dir ui build
+```
+
+## 维护规则
+
+- 修改插件设置时，同步检查 `settings.yaml`、`PictureBedConfig` 和文档配置说明。
+- 新增图床类型时，同步补齐后端服务、Console Provider、附件选择器注册、权限说明和用户指南。
+- 修改接口时，重新生成 OpenAPI 客户端并检查 `ui/src/api/generated`。
+- 不要在文档中承诺第三方平台不支持的能力，尤其是相册、搜索、分页和删除语义。
