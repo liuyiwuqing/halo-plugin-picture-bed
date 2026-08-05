@@ -104,6 +104,9 @@ Halo UI 可使用的附件式数据。
 - 扩展的 `priority` 必须高于 Halo 内置 `upload` 扩展（未声明 priority，取 Tiptap 默认 100），
   否则内置处理器会先消费事件并把图片存进 Halo 本地附件。
 - 只接管 `image/*`，其余文件放行。上传失败不回退到本地附件。
+- `handlePaste`/`handleDrop` 必须同步返回是否接管，而上传目标要查接口才知道，因此在 `onCreate`
+  预取并缓存到扩展 storage。没有目标（或预取未返回）时返回 `false` 放行，由 Halo 内置上传接手，
+  绝不能先返回 `true` 再异步发现没目标——那样文件就丢了。
 - 上传目标由各实例的 `pictureBedEditorUpload` 开关决定，互斥在 `PictureBedConfig#getPictureBeds`
   读取时强制：靠前且已启用的实例胜出。Halo 渲染的设置表单不归插件管，无法在保存时弹窗二选一，
   因此表单可能同时显示多个开启状态，实际生效目标只在图床管理页顶部展示。

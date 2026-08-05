@@ -163,29 +163,45 @@ function removeImageBySrc(editor: Editor, previewUrl: string) {
  * priority 必须高于 Halo 内置的 upload 扩展（未声明 priority，取 Tiptap 默认的 100），
  * 否则内置处理器会先消费事件并把图片存进 Halo 本地附件。
  */
-export const PictureBedUploadExtension = Extension.create({
+export const PictureBedUploadExtension = Extension.create<
+    Record<string, never>,
+    {target: EditorUploadTarget | undefined}
+>({
     name: 'pictureBedUpload',
     priority: 1000,
 
+    addStorage() {
+        return {target: undefined}
+    },
+
+    /**
+     * handlePaste/handleDrop 必须同步给出是否接管的结论，而上传目标要请求接口才知道，
+     * 因此在编辑器初始化时预取一次并缓存。取不到就一直是 undefined，粘贴时直接放行。
+     */
+    onCreate() {
+        fetchEditorUploadTarget().then((target) => {
+            this.storage.target = target
+        })
+    },
+
     addProseMirrorPlugins() {
         const editor = this.editor as Editor
+        const storage = this.storage
 
         const handleFiles = (rawFiles: File[]): boolean => {
+            // 没有配置上传目标（或预取尚未返回）时不接管，交回给 Halo 内置上传，
+            // 图片按站点原有的存储策略处理，功能等同于未开启。
+            const target = storage.target
+            if (!target) {
+                return false
+            }
+
             const images = pickImageFiles(rawFiles)
             if (!images.length) {
                 return false
             }
 
-            // 目标是异步取的，无法在此同步判断是否启用；先消费事件，
-            // 未配置目标时再把文件交还给 Halo 内置上传，避免图片被丢掉。
-            fetchEditorUploadTarget().then((target) => {
-                if (!target) {
-                    Toast.warning('未设置编辑器上传目标图床，请在插件设置中开启')
-                    return
-                }
-                images.forEach((file) => insertAndUpload(editor, file, target))
-            })
-
+            images.forEach((file) => insertAndUpload(editor, file, target))
             return true
         }
 
@@ -209,8 +225,12 @@ export const PictureBedUploadExtension = Extension.create({
                         if (!event.dataTransfer?.files.length) {
                             return false
                         }
-                        event.preventDefault()
-                        return handleFiles(Array.from(event.dataTransfer.files))
+                        const handled = handleFiles(Array.from(event.dataTransfer.files))
+                        // 只有确实接管时才阻止默认行为，否则会干扰 Halo 内置上传的拖放处理
+                        if (handled) {
+                            event.preventDefault()
+                        }
+                        return handled
                     },
                 },
             }),
