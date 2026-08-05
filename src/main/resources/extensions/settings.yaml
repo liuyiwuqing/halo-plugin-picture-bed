@@ -57,6 +57,14 @@ spec:
               key: pictureBedEnabled
               label: 是否启用
               value: false
+            # 互斥由后端 PictureBedConfig#getPictureBeds 在读取时强制：靠前的实例胜出。
+            # Halo 渲染的设置表单不归插件管，没法在保存时弹窗让用户二选一，所以这里只能靠 help 提示。
+            - $formkit: switch
+              name: pictureBedEditorUpload
+              key: pictureBedEditorUpload
+              label: 作为编辑器上传目标
+              value: false
+              help: 开启后，在文章编辑器里粘贴或拖入图片会直接上传到该图床。只能有一个图床开启，多开时取靠前的那个，实际生效的目标在“工具 -> 图床管理”页顶部显示
             - $formkit: text
               name: pictureBedUrl
               key: pictureBedUrl

@@ -21,7 +21,11 @@ interface PictureBedResponse {
   key: string
   enabled: boolean
   type: string
+  editorUpload?: boolean
 }
+
+// 编辑器上传目标的互斥由后端强制，设置表单里看不出实际生效的是哪个，这里补一个可见提示
+const editorUploadTargetName = ref('')
 
 const pictureBedKey = ref('')
 const isLoading = ref(false)
@@ -50,6 +54,11 @@ const {data: pictureBedsAvailable} = useQuery<PictureBed[]>({
             value: item.key,
           }))
 
+      const editorTarget = (data as PictureBedResponse[]).find(
+          (item) => item.enabled && item.editorUpload,
+      )
+      editorUploadTargetName.value = editorTarget?.name ?? ''
+
       pictureBedKey.value = pictureBedsEnabled[0]?.value ?? ''
       return pictureBedsEnabled
     } finally {
@@ -73,6 +82,10 @@ const handleAttachmentUpdate = (attachments: AttachmentLike[]) => {
     </template>
   </VPageHeader>
   <div class="h-full w-full">
+    <div v-if="editorUploadTargetName" class="px-4 pt-2 text-xs text-gray-500">
+      当前编辑器上传目标：<span class="font-medium text-gray-700">{{ editorUploadTargetName }}</span>
+      —— 在文章编辑器中粘贴或拖入图片会直接上传到该图床
+    </div>
     <VLoading v-if="isLoading" />
     <VCard v-else-if="pictureBedKey">
       <component

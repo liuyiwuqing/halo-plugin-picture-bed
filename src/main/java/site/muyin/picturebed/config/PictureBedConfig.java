@@ -7,6 +7,7 @@ import org.springframework.util.StringUtils;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -26,12 +27,19 @@ public class PictureBedConfig {
     private List<PictureBed> pictureBeds;
 
     /**
-     * 返回图床实例列表，并保证每条都有唯一的 pictureBedId。
+     * 返回图床实例列表，并在读取侧完成两项归一化：
+     * <ol>
+     *     <li>保证每条都有唯一的 pictureBedId</li>
+     *     <li>保证最多只有一个实例的 pictureBedEditorUpload 为真</li>
+     * </ol>
+     * 两项都做在这里，是因为插件设置表单由 Halo 渲染，插件既无法在保存时校验，也无法弹窗让用户二选一。
      * <p>
-     * 表单侧的自动编号依赖 FormKit 的 schema 变量，历史上出现过静默失效（Halo 2.23 起 $index 不再可用），
-     * 且 $pictureBeds.length 取的是已保存的数组长度，一次会话内连加多条会拿到相同的值。
-     * 这里做最终兜底：已有且不重复的 ID 原样保留，保证旧配置的实例 ID 不变；
-     * 为空或重复的条目重新分配一个未被占用的最小非负整数。
+     * ID 方面：表单侧的自动编号依赖 FormKit 的 schema 变量，历史上出现过静默失效（Halo 2.23 起
+     * $index 不再可用），且 $pictureBeds.length 取的是已保存的数组长度，一次会话内连加多条会拿到
+     * 相同的值。这里做最终兜底：已有且不重复的 ID 原样保留，保证旧配置的实例 ID 不变；为空或重复的
+     * 条目重新分配一个未被占用的最小非负整数。
+     * <p>
+     * 编辑器上传目标方面：粘贴、拖拽上传只能有一个目标，靠前且已启用的实例胜出，其余一律视为关闭。
      * <p>
      * 归一化写在 getter 里，是因为所有消费方（各图床服务实现和 PictureBedEndpoint）都已经通过它取值，
      * 不需要改任何调用点。该方法是幂等的，且 ReactiveSettingFetcher#fetch 只缓存 ConfigMap，
@@ -62,7 +70,30 @@ public class PictureBedConfig {
             pictureBed.setPictureBedId(String.valueOf(candidate));
         }
 
+        boolean taken = false;
+        for (PictureBed pictureBed : pictureBeds) {
+            if (!Boolean.TRUE.equals(pictureBed.getPictureBedEditorUpload())) {
+                continue;
+            }
+            // 未启用的实例不能充当上传目标，否则编辑器会传向一个用户以为已经停用的图床
+            if (taken || !Boolean.TRUE.equals(pictureBed.getPictureBedEnabled())) {
+                pictureBed.setPictureBedEditorUpload(false);
+                continue;
+            }
+            taken = true;
+        }
+
         return pictureBeds;
+    }
+
+    /**
+     * 当前生效的编辑器上传目标，没有则返回 null
+     */
+    public PictureBed findEditorUploadTarget() {
+        return Objects.requireNonNullElse(getPictureBeds(), List.<PictureBed>of()).stream()
+                .filter(p -> Boolean.TRUE.equals(p.getPictureBedEditorUpload()))
+                .findFirst()
+                .orElse(null);
     }
 
     @Data
@@ -77,5 +108,6 @@ public class PictureBedConfig {
         private String pictureBedStrategyId;
         private String pictureBedClientId;
         private String pictureBedClientSecret;
+        private Boolean pictureBedEditorUpload;
     }
 }

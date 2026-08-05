@@ -96,6 +96,18 @@ Halo UI 可使用的附件式数据。
 - Console 路由挂在 `ToolsRoot` 下，路径为 `picture-bed`，菜单名为 `图床管理`。
 - 附件选择器扩展点是 `attachment:selector:create`。
 - 附件选择器只返回已启用且当前用户有权限的图床实例。
+- 编辑器上传扩展点是 `default:editor:extension:create`，返回 `ui/src/editor/picture-bed-upload.ts`
+  中的 Tiptap 扩展，接管默认富文本编辑器的粘贴和拖拽。
+
+### 编辑器直传
+
+- 扩展的 `priority` 必须高于 Halo 内置 `upload` 扩展（未声明 priority，取 Tiptap 默认 100），
+  否则内置处理器会先消费事件并把图片存进 Halo 本地附件。
+- 只接管 `image/*`，其余文件放行。上传失败不回退到本地附件。
+- 上传目标由各实例的 `pictureBedEditorUpload` 开关决定，互斥在 `PictureBedConfig#getPictureBeds`
+  读取时强制：靠前且已启用的实例胜出。Halo 渲染的设置表单不归插件管，无法在保存时弹窗二选一，
+  因此表单可能同时显示多个开启状态，实际生效目标只在图床管理页顶部展示。
+- `@halo-dev/richtext-editor` 是 external，只作为类型依赖，不会打进插件产物。
 
 ### 前端页面层
 
