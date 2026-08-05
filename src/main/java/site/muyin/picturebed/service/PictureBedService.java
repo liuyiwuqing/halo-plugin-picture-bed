@@ -227,7 +227,7 @@ public class PictureBedService {
                             ? image.getName() : metadata.getFileName())
                     .setUrl(image.getPublicUrl());
             if (metadata != null) {
-                imageVO.setMediaType(metadata.getFileType())
+                imageVO.setMediaType(resolveCfImgBedMediaType(metadata, imageVO.getName()))
                         .setSize(resolveCfImgBedSize(metadata))
                         .setWidth(metadata.getWidth())
                         .setHeight(metadata.getHeight());
@@ -236,6 +236,43 @@ public class PictureBedService {
         }).toList();
         return new PageResult<>(page.getPage(), page.getSize(), page.getTotalCount(), page.getTotalPages(),
                 imageVOList);
+    }
+
+    /**
+     * CloudFlare ImgBed 的 FileType 存的是上传时客户端给的 Content-Type，未带正确类型上传的图片
+     * 会存成 application/octet-stream。此时回退到按扩展名判定，否则前端会把图片当成普通文件，
+     * 既不显示缩略图，在附件选择器里也会被置灰。
+     */
+    private static String resolveCfImgBedMediaType(CfImgBedImage.Metadata metadata, String fileName) {
+        String declared = metadata.getFileType();
+        if (declared != null && declared.startsWith("image/")) {
+            return declared;
+        }
+        String guessed = getMediaTypeByExtension(fileName);
+        return guessed != null ? guessed : declared;
+    }
+
+    /**
+     * 只覆盖上传组件允许的图片格式。MimetypesFileTypeMap 认不出 webp，
+     * 这也是 {@link #getMediaTypeForPan123} 当初要单独处理 webp 的原因。
+     */
+    public static String getMediaTypeByExtension(String fileName) {
+        if (fileName == null) {
+            return null;
+        }
+        int dot = fileName.lastIndexOf('.');
+        if (dot < 0 || dot == fileName.length() - 1) {
+            return null;
+        }
+        return switch (fileName.substring(dot + 1).toLowerCase()) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            case "svg" -> "image/svg+xml";
+            case "bmp" -> "image/bmp";
+            default -> null;
+        };
     }
 
     // 前端用 prettyBytes 展示，单位必须是字节；早期记录只有单位为 MB 的 FileSize

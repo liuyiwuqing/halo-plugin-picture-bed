@@ -154,8 +154,9 @@ public class CfImgBedServiceImpl implements CfImgBedService {
                     paramMap.put("count", size);
                     // 上游的 totalCount 在过滤子目录文件之前统计，只有 recursive=true 时才和分页集合一致
                     paramMap.put("recursive", true);
-                    // 服务端按 MIME 前缀过滤，非图片文件不会占用分页和总数
-                    paramMap.put("fileType", "image");
+                    // 这里不能加 fileType=image：上游按 metadata.FileType 前缀过滤，而该字段存的是上传时
+                    // 客户端给的 Content-Type。实测未带正确类型上传的图片会存成 application/octet-stream，
+                    // 加了这个过滤会把它们连同总数一起排除掉。图片与否改由 ImageVO.mediaType 按扩展名判定。
                     if (StringUtils.hasText(query.getAlbumId())) {
                         paramMap.put("dir", query.getAlbumId());
                     }
