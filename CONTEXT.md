@@ -18,7 +18,7 @@ Halo UI 可使用的附件式数据。
 | 项目                  | 当前值                              |
 |---------------------|----------------------------------|
 | 插件 ID               | `PictureBed`                     |
-| 插件版本                | `1.3.3`                          |
+| 插件版本                | `1.4.0`                          |
 | Halo 要求             | `>=2.25.0`                       |
 | 插件 API GroupVersion | `picturebed.muyin.site/v1alpha1` |
 | UI 权限               | `plugin:picturebed:manage`       |
@@ -36,7 +36,7 @@ Halo UI 可使用的附件式数据。
 
 **图床类型 Picture Bed Type**
 
-图床实例背后的服务类型。当前支持 `lsky`、`smms`、`imgtp`、`pan123`。
+图床实例背后的服务类型。当前支持 `lsky`、`smms`、`imgtp`、`pan123`、`cfimgbed`。
 
 **图片列表 Image List**
 
@@ -64,7 +64,9 @@ Halo UI 可使用的附件式数据。
 
 **文件夹 Folder**
 
-123 盘返回的层级分组。前端会把它显示成类似相册的过滤入口，但不要把 123 盘文件夹写成兰空相册。
+123 盘和 CloudFlare ImgBed 返回的层级分组。前端会把它显示成类似相册的过滤入口，但不要把文件夹写成兰空相册。
+
+CloudFlare ImgBed 的目录树在后端被展平成完整路径列表，前端展示的是 `2024/travel/` 这样的整段路径。
 
 ## 架构地图
 
@@ -88,6 +90,8 @@ Halo UI 可使用的附件式数据。
 - `SmmsServiceImpl` 负责 SM.MS。
 - `ImgtpServiceImpl` 负责 ImgTP。
 - `Pan123ServiceImpl` 负责 123 盘，并按 `client_id` 缓存访问令牌。
+- `CfImgBedServiceImpl` 负责 CloudFlare ImgBed，统一用 API Token 走 `Authorization: Bearer`，
+  列表恒定 `recursive=true`，并自行拼接图片访问链接。
 - `ImageVO`、`AlbumVO`、`PageResult`、`PictureBedVO` 是前端依赖的统一返回模型。
 
 ### 前端入口层
@@ -100,8 +104,8 @@ Halo UI 可使用的附件式数据。
 ### 前端页面层
 
 - `ui/src/views/PictureBeds.vue` 是图床管理页外壳，负责加载图床实例和切换 Provider。
-- `LskySelectorProvider.vue`、`SmmsSelectorProvider.vue`、`ImgtpSelectorProvider.vue`、`Pan123SelectorProvider.vue`
-  分别处理不同图床的浏览模型。
+- `LskySelectorProvider.vue`、`SmmsSelectorProvider.vue`、`ImgtpSelectorProvider.vue`、`Pan123SelectorProvider.vue`、
+  `CfImgBedSelectorProvider.vue` 分别处理不同图床的浏览模型。
 - `components/image/*` 是共享图片列表、展示模式、详情弹窗、上传弹窗和导航逻辑。
 
 ## 图床能力矩阵
@@ -112,6 +116,7 @@ Halo UI 可使用的附件式数据。
 | SM.MS | `smms`   | 无      | 当前 UI 无入口 | 支持   | 无            | 支持        | 支持 |
 | ImgTP | `imgtp`  | 无      | 当前 UI 无入口 | 支持   | 无            | 支持        | 支持 |
 | 123 盘 | `pan123` | 文件夹    | 不支持       | 不支持  | `lastFileId` | 当前 UI 未开放 | 支持 |
+| CloudFlare ImgBed | `cfimgbed` | 文件夹 | 支持，限当前目录 | 支持 | 无 | 支持 | 支持 |
 
 ## 非目标
 
@@ -126,5 +131,5 @@ Halo UI 可使用的附件式数据。
 - 新增或修改设置字段时，同时更新 `settings.yaml`、`PictureBedConfig`、`README.md` 和 `docs/user-guide.md`。
 - 新增图床类型时，要补齐后端服务实现、`PictureBedService` 分发、Console Provider、附件选择器映射、用户文档和能力矩阵。
 - 修改接口时，要同步 OpenAPI 生成客户端，避免前端手写接口路径。
-- 修改图片列表展示逻辑时，优先改共享组件，不要在四个 Provider 中复制 UI。
+- 修改图片列表展示逻辑时，优先改共享组件，不要在各个 Provider 中复制 UI。
 - 文档描述必须以当前代码和插件元数据为准，不要沿用旧版本号、旧 Halo 要求或已经移除的开发命令。

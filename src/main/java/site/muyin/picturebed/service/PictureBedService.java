@@ -6,6 +6,8 @@ import org.springframework.http.codec.multipart.Part;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
+import site.muyin.picturebed.domain.CfImgBedDirectory;
+import site.muyin.picturebed.domain.CfImgBedImage;
 import site.muyin.picturebed.domain.ImgtpImage;
 import site.muyin.picturebed.domain.LskyProAlbum;
 import site.muyin.picturebed.domain.LskyProImage;
@@ -20,6 +22,7 @@ import site.muyin.picturebed.vo.ResultsVO;
 import java.io.File;
 import java.util.List;
 
+import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.CFIMGBED;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.IMGTP;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.LSKY;
 import static site.muyin.picturebed.constant.CommonConstant.PictureBedType.Pan123;
@@ -39,6 +42,7 @@ public class PictureBedService {
     private final SmmsService smmsService;
     private final ImgtpService imgtpService;
     private final Pan123Service pan123Service;
+    private final CfImgBedService cfImgBedService;
 
     public Mono<ResultsVO> uploadImage(CommonQuery query, MultiValueMap<String, Part> parts) {
         String type = query.getType();
@@ -51,6 +55,8 @@ public class PictureBedService {
                 return imgtpService.uploadImage(query, parts);
             case Pan123:
                 return pan123Service.uploadImage(query, parts);
+            case CFIMGBED:
+                return cfImgBedService.uploadImage(query, parts);
             default:
                 // TODO: get album list from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -63,6 +69,10 @@ public class PictureBedService {
             case LSKY:
                 return lskyProService.getAlbumList(query)
                         .map(PictureBedService::convertLskyProAlbumListToAlbumVOList)
+                        .defaultIfEmpty(List.of());
+            case CFIMGBED:
+                return cfImgBedService.getAlbumList(query)
+                        .map(PictureBedService::convertCfImgBedDirectoryListToAlbumVOList)
                         .defaultIfEmpty(List.of());
             case SMMS:
             case IMGTP:
@@ -96,6 +106,11 @@ public class PictureBedService {
                     PageResult<ImageVO> imageVOPageResult = convertPan123ImageListToImageVOList(pan123Images);
                     return Mono.just(imageVOPageResult);
                 });
+            case CFIMGBED:
+                return cfImgBedService.getImageList(query).flatMap(cfImgBedImages -> {
+                    PageResult<ImageVO> imageVOPageResult = convertCfImgBedImageListToImageVOList(cfImgBedImages);
+                    return Mono.just(imageVOPageResult);
+                });
             default:
                 // TODO: get image list from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -113,6 +128,8 @@ public class PictureBedService {
                 return imgtpService.deleteImage(query);
             case Pan123:
                 return pan123Service.deleteImage(query);
+            case CFIMGBED:
+                return cfImgBedService.deleteImage(query);
             default:
                 // TODO: delete image from other picture bed service
                 throw new IllegalArgumentException("暂不支持该图片托管服务");
@@ -189,6 +206,51 @@ public class PictureBedService {
         }).toList();
         return new PageResult<>(pan123Images.getPage(), pan123Images.getSize(), pan123Images.getTotalCount(),
                 pan123Images.getTotalPages(), imageVOList);
+    }
+
+    static List<AlbumVO> convertCfImgBedDirectoryListToAlbumVOList(List<CfImgBedDirectory> directoryList) {
+        return directoryList.stream().map(directory -> {
+            AlbumVO albumVO = new AlbumVO();
+            albumVO.setId(directory.getPath()).setName(directory.getName())
+                    .setDescription(directory.getPath());
+            return albumVO;
+        }).toList();
+    }
+
+    private PageResult<ImageVO> convertCfImgBedImageListToImageVOList(PageResult<CfImgBedImage> page) {
+        List<CfImgBedImage> imageList = page.getList();
+        List<ImageVO> imageVOList = imageList.stream().map(image -> {
+            CfImgBedImage.Metadata metadata = image.getMetadata();
+            ImageVO imageVO = new ImageVO();
+            imageVO.setId(image.getName())
+                    .setName(metadata == null || metadata.getFileName() == null
+                            ? image.getName() : metadata.getFileName())
+                    .setUrl(image.getPublicUrl());
+            if (metadata != null) {
+                imageVO.setMediaType(metadata.getFileType())
+                        .setSize(resolveCfImgBedSize(metadata))
+                        .setWidth(metadata.getWidth())
+                        .setHeight(metadata.getHeight());
+            }
+            return imageVO;
+        }).toList();
+        return new PageResult<>(page.getPage(), page.getSize(), page.getTotalCount(), page.getTotalPages(),
+                imageVOList);
+    }
+
+    // 前端用 prettyBytes 展示，单位必须是字节；早期记录只有单位为 MB 的 FileSize
+    private static Float resolveCfImgBedSize(CfImgBedImage.Metadata metadata) {
+        if (metadata.getFileSizeBytes() != null) {
+            return metadata.getFileSizeBytes().floatValue();
+        }
+        if (metadata.getFileSize() == null) {
+            return null;
+        }
+        try {
+            return Float.parseFloat(metadata.getFileSize()) * 1024 * 1024;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     public static String getMediaType(String fileName) {

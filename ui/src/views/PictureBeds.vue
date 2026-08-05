@@ -7,6 +7,7 @@ import LskySelectorProvider from '@/components/LskySelectorProvider.vue'
 import SmmsSelectorProvider from '@/components/SmmsSelectorProvider.vue'
 import ImgtpSelectorProvider from '@/components/ImgtpSelectorProvider.vue'
 import Pan123SelectorProvider from '@/components/Pan123SelectorProvider.vue'
+import CfImgBedSelectorProvider from '@/components/CfImgBedSelectorProvider.vue'
 import {useQuery} from '@tanstack/vue-query'
 import {pictureBedApisClient} from '@/api'
 import type {AttachmentLike} from '@halo-dev/ui-shared'
@@ -31,6 +32,7 @@ const providerComponentMap: Record<string, Component> = {
   smms: SmmsSelectorProvider,
   imgtp: ImgtpSelectorProvider,
   pan123: Pan123SelectorProvider,
+  cfimgbed: CfImgBedSelectorProvider,
 }
 const selectedProviderType = computed(() => pictureBedKey.value.split('_')[0] ?? '')
 const currentProviderComponent = computed(
