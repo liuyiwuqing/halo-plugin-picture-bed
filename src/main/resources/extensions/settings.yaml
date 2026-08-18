@@ -45,6 +45,8 @@ spec:
                   value: imgtp
                 - label: 123盘图床
                   value: pan123
+                - label: CloudFlare ImgBed
+                  value: cfimgbed
             - $formkit: text
               name: pictureBedName
               key: pictureBedName
@@ -62,14 +64,14 @@ spec:
               key: pictureBedUrl
               label: API 地址
               value: ""
-              help: 如 https://sm.ms/api/v2/，末尾带 /
+              help: 其他图床填接口基础地址，如 https://sm.ms/api/v2/；CloudFlare ImgBed 填站点根地址，如 https://img.example.com/。末尾均带 /
               validation: required|url
             - $formkit: text
               name: pictureBedToken
               key: pictureBedToken
               label: API Token
               value: ""
-              help: 图床 API Token
+              help: 图床 API Token。CloudFlare ImgBed 需在后台创建同时具备 upload、list、delete 权限的 API Token
               validation: required
             - $formkit: text
               if: "$value.pictureBedType === 'lsky'"
@@ -92,3 +94,30 @@ spec:
               label: client_secret
               value: ""
               help: 123云盘OpenAPI的 client_secret
+            - $formkit: select
+              if: "$value.pictureBedType === 'cfimgbed'"
+              name: pictureBedUploadChannel
+              key: pictureBedUploadChannel
+              label: 上传渠道
+              value: telegram
+              help: 需与 CloudFlare ImgBed 后台已配置的存储渠道一致，否则会先失败再自动切换
+              options:
+                - label: Telegram
+                  value: telegram
+                - label: Cloudflare R2
+                  value: cfr2
+                - label: S3
+                  value: s3
+                - label: Discord
+                  value: discord
+                - label: HuggingFace
+                  value: huggingface
+                - label: WebDAV
+                  value: webdav
+            - $formkit: text
+              if: "$value.pictureBedType === 'cfimgbed'"
+              name: pictureBedCdnUrl
+              key: pictureBedCdnUrl
+              label: 自定义访问域名
+              value: ""
+              help: 图片链接使用的域名，如 https://cdn.example.com/，末尾带 /。留空则使用上方 API 地址拼接

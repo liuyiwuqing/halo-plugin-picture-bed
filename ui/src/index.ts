@@ -9,6 +9,7 @@ import ImgtpSelectorProvider from '@/components/ImgtpSelectorProvider.vue'
 import {pictureBedApisClient} from '@/api'
 import {consoleApiClient} from '@halo-dev/api-client'
 import Pan123SelectorProvider from '@/components/Pan123SelectorProvider.vue'
+import CfImgBedSelectorProvider from '@/components/CfImgBedSelectorProvider.vue'
 
 function createAttachmentSelectProvider(item: any, component: any) {
     const newComponent = {
@@ -77,6 +78,9 @@ export default definePlugin({
                                 break
                             case 'pan123':
                                 component = Pan123SelectorProvider
+                                break
+                            case 'cfimgbed':
+                                component = CfImgBedSelectorProvider
                                 break
                             default:
                                 console.warn(`未找到对应组件: ${item.type}`)

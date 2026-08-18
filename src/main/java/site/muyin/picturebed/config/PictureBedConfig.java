@@ -77,5 +77,7 @@ public class PictureBedConfig {
         private String pictureBedStrategyId;
         private String pictureBedClientId;
         private String pictureBedClientSecret;
+        private String pictureBedUploadChannel;
+        private String pictureBedCdnUrl;
     }
 }
