@@ -19,13 +19,17 @@ spec:
             - type: text
               label: $value.pictureBedType
           children:
+            # Halo 2.23 起 array 组件把条目放进弹窗渲染，作用域只绑了 value，$index 不再可用。
+            # 改用顶层的 $pictureBeds.length 取新条目下标；旧条目已存的 ID 会被父级值覆盖，不受影响。
+            # 不能加 validation: required：字段是 disabled 的，取不到值时用户无法手工补，会卡死保存。
+            # 最终 ID 以 PictureBedConfig#getPictureBeds 的归一化结果为准。
             - $formkit: text
               disabled: true
               name: pictureBedId
               key: pictureBedId
               label: 图床 ID
-              value: $index
-              validation: required
+              value: $pictureBeds.length
+              help: 用于区分同类型下的多个图床实例，保存时由系统自动分配
             - $formkit: select
               id: pictureBedType
               name: pictureBedType
