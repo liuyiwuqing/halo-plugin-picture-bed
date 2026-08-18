@@ -52,7 +52,7 @@ const cardClass = (image: ImageVO) => [
         role="listitem"
         @click.stop="emit('select', image)"
     >
-      <div :class="displayClasses.item">
+      <div :class="displayClasses.item" :title="image.name || ''">
         <div :class="displayClasses.frame">
           <LazyImage
               v-if="isImage(image.mediaType)"
@@ -130,6 +130,22 @@ const cardClass = (image: ImageVO) => [
 
 .picture-bed-image-list__frame--masonry {
   line-height: 0;
+}
+
+/*
+ * 瀑布流文件名压在图片上，必须自带深色衬底，否则白底图上的白字看不见。
+ * 这里不用 Tailwind 的 bg-gradient-to-t/from-gray-900/75：插件没有自己的
+ * Tailwind 构建，只能用 Halo Console 已生成的工具类，而 from-gray-900/75
+ * 在 Halo 源码中从未出现，缺少色标会让整条 linear-gradient 失效。
+ */
+.picture-bed-image-list__caption--masonry {
+  background-image: linear-gradient(
+    to top,
+    rgb(17 24 39 / 85%) 0%,
+    rgb(17 24 39 / 55%) 45%,
+    transparent 100%
+  );
+  text-shadow: 0 1px 2px rgb(0 0 0 / 60%);
 }
 
 @media (min-width: 640px) {
