@@ -163,7 +163,8 @@ public class PictureBedEndpoint implements CustomEndpoint {
         pictureBedVO.setKey(pictureBed.getPictureBedType() + "_" + pictureBed.getPictureBedId())
                 .setName(pictureBed.getPictureBedName())
                 .setType(pictureBed.getPictureBedType())
-                .setEnabled(Boolean.TRUE.equals(pictureBed.getPictureBedEnabled()));
+                .setEnabled(Boolean.TRUE.equals(pictureBed.getPictureBedEnabled()))
+                .setEditorUpload(Boolean.TRUE.equals(pictureBed.getPictureBedEditorUpload()));
         return pictureBedVO;
     }
 

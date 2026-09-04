@@ -15,4 +15,8 @@ public class PictureBedVO {
     private String name;
     private String type;
     private Boolean enabled;
+    /**
+     * 是否作为编辑器粘贴、拖拽上传的目标。全部实例中最多只有一个为 true
+     */
+    private Boolean editorUpload;
 }

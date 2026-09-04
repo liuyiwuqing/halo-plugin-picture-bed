@@ -9,6 +9,7 @@ import ImgtpSelectorProvider from '@/components/ImgtpSelectorProvider.vue'
 import {pictureBedApisClient} from '@/api'
 import {consoleApiClient} from '@halo-dev/api-client'
 import Pan123SelectorProvider from '@/components/Pan123SelectorProvider.vue'
+import PictureBedUploadExtension from '@/editor/picture-bed-upload'
 
 function createAttachmentSelectProvider(item: any, component: any) {
     const newComponent = {
@@ -87,6 +88,10 @@ export default definePlugin({
             }
 
             return attachmentSelectProviders
+        },
+        // 接管默认富文本编辑器的粘贴、拖拽上传，是否生效由各图床实例的“作为编辑器上传目标”开关决定
+        'default:editor:extension:create': () => {
+            return [PictureBedUploadExtension]
         },
     },
 })
